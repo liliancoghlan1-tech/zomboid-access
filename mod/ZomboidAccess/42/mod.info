@@ -1,0 +1,5 @@
+name=Zomboid Access
+id=ZomboidAccess
+description=Makes Project Zomboid playable with a screen reader (NVDA): menus, status, inventory and more, in English.
+modversion=0.5.1
+versionMin=42.0.0
