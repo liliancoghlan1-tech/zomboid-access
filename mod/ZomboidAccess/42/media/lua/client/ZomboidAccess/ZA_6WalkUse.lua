@@ -2,6 +2,7 @@
 --   A container, or a Loot line: walk to it if needed, then open it in the loot window (with the item selected).
 --   Anything else you can interact with (a door, a sink, a bed, a light, something on the ground): the game's
 --     own menu for it opens at once; choosing an option there walks you over and does it.
+--   A vehicle: the game's own walk to the driver's door and getting in.
 --   An action line ("Mark this spot"): does it. A marker: hold Square again within 4 seconds to remove it.
 
 local W, S = ZA.W, ZA.S
@@ -100,7 +101,22 @@ function W.use()
         end
         return
     end
+    -- driving: autodrive to it (ZA_7DriveRoute)
+    local veh = p:getVehicle()
+    if veh and not e.noWhere and not e.action then
+        if veh:isDriver(p) and ZA.RT then ZA.RT.start(e, "auto") else ZA.say("Only the driver can drive there.") end
+        return
+    end
     if e.noWhere then ZA.say("Nothing to use there."); return end
+    -- a foraging find: the game's own forage action (it walks you next to it first)
+    if e.cat == "finds" and e.icon and ZA.FG then ZA.FG.pickUp(e); return end
+    -- a vehicle: the game walks you to the driver's door, opens it and gets you in (ISVehicleMenu.onEnter)
+    if e.obj and instanceof(e.obj, "BaseVehicle") then
+        if W.action or W.travel or W.safe then W.stop(true) end
+        ZA.say("Getting into the driver's seat.")
+        ISVehicleMenu.onEnter(p, e.obj, 0)
+        return
+    end
     if e.far or e.walk == "mob" then W.go(); return end
     if e.container then
         local x, y, z = S.entryPos(e)

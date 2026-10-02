@@ -99,9 +99,11 @@ end
 function W.stop(quiet)
     local p = getPlayer()
     if (W.action or W.travel) and p then ISTimedActionQueue.clear(p) end
-    W.action, W.entry, W.travel, W.afterArrive = nil, nil, nil, nil
+    W.action, W.entry, W.travel, W.afterArrive, W.safe = nil, nil, nil, nil, nil
     if not quiet then ZA.say("Stopped.") end
 end
+
+W.startWalk, W.watchFail, W.strategies = startWalk, watchFail, strategies
 
 local function face(p, e)
     pcall(function()
@@ -231,8 +233,18 @@ end
 
 function W.go()
     local p = getPlayer()
-    if W.action or W.travel then W.stop(); return end
-    if p:getVehicle() then ZA.say("You're in a vehicle."); return end
+    if W.action or W.travel or W.safe then W.stop(); return end
+    if p:getVehicle() then
+        -- driving: route guidance to it (ZA_7DriveRoute); again stops the route
+        if ZA.RT and ZA.RT.route then ZA.RT.stop(); return end
+        local e = S.current()
+        if e and not e.noWhere and not e.action and p:getVehicle():isDriver(p) and ZA.RT then
+            ZA.RT.start(e, "guide")
+        else
+            ZA.say("You're in a vehicle.")
+        end
+        return
+    end
     if getGameSpeed() == 0 then ZA.say("The game is paused."); return end
     local e = S.current()
     if not e then ZA.say("Nothing selected. Use Page Down to pick something first."); return end
@@ -255,6 +267,12 @@ function W.go()
         local ok, err = pcall(W.startTravel, p, e, warn)
         if not ok then print("[ZA] travel error: " .. tostring(err)); ZA.say("Can't travel there.") end
         return
+    end
+    -- zombies close by: walk round them in short stretches (ZA_6WalkSafe), the last few steps the usual way
+    if ZA.WS and ZA.WS.wanted(p, e) then
+        local ok, started = pcall(ZA.WS.start, p, e, warn)
+        if ok and started then return end
+        if not ok then print("[ZA] safe walk error: " .. tostring(started)) end
     end
     local ok, res, action = pcall(startWalk, p, e, 1)
     if not ok then
@@ -289,7 +307,7 @@ end
 function W.watch()
     if not W.action then return end
     local p = getPlayer()
-    if not p or p:isDead() then W.action, W.travel = nil, nil; return end
+    if not p or p:isDead() then W.action, W.travel, W.safe = nil, nil, nil; return end
     -- a zombie close by stops the walk: walking into one is how you die
     local t = getTimestampMs()
     if t >= (W.nextThreatCheck or 0) then
@@ -297,7 +315,7 @@ function W.watch()
         local z = S.nearestThreat(6, 2.5)
         if z and not (W.known and W.known[z]) then
             local e = W.entry
-            W.action, W.entry, W.travel = nil, nil, nil
+            W.action, W.entry, W.travel, W.safe = nil, nil, nil, nil
             ISTimedActionQueue.clear(p)
             print("[ZA] walk stopped by zombie " .. (e and e.key or ""))
             ZA.say("Stopped! " .. S.threatText(z) .. ".")
@@ -309,6 +327,12 @@ function W.watch()
     local failed = W.failed or (a.result and a.result == BehaviorResult.Failed)
     local succeeded = a.result and a.result == BehaviorResult.Succeeded
     W.action = nil
+
+    if W.safe then
+        local ok, err = pcall(ZA.WS.legDone, p, failed, succeeded)
+        if not ok then print("[ZA] safe walk error: " .. tostring(err)); W.safe, W.entry = nil, nil end
+        return
+    end
 
     if W.travel then
         -- a leg ended: stopped by the player (they moved), or done / failed

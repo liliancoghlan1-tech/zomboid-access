@@ -100,3 +100,47 @@ function F.screenIntro(panel)
     end
     return t
 end
+
+-- ---------- the on-screen keyboard ----------
+-- Opens when Cross is pressed on a text or number box with a controller (sandbox numbers, names, markers).
+-- Each key by name; after each key, what's typed so far.
+
+local keyWords = {
+    ["`"] = "backtick", ["-"] = "minus", ["="] = "equals", ["["] = "left bracket", ["]"] = "right bracket",
+    ["\\"] = "backslash", [";"] = "semicolon", ["'"] = "apostrophe", [","] = "comma", ["."] = "full stop",
+    ["/"] = "slash", [" "] = "space",
+}
+
+local function oskText(osk)
+    local t = osk and osk.entry and osk.entry:getText() or ""
+    if osk and osk.entry and osk.entry:isMasked() then return #t .. " characters" end
+    return t == "" and "nothing" or t
+end
+
+F.screens.OnScreenKeyboardPanel = {
+    name = "On-screen keyboard",
+    intro = function(p)
+        return "On-screen keyboard. Typed so far: " .. oskText(p.parent) .. ". The D-pad moves over the keys: numbers on the top row, "
+            .. "then the letters as on a computer keyboard. Cross types a key, Square deletes, Triangle types a space, "
+            .. "Circle cancels. Accept, at the right end of the third row, finishes"
+    end,
+}
+F.screens.OnScreenKeyboardEntry = {
+    name = "On-screen keyboard, the text",
+    intro = function(p) return "The text: " .. oskText(p.parent) .. ". Left and Right move the cursor, Down goes to the keys" end,
+}
+
+F.readers.OnScreenKeyboardPanel = function(p)
+    local b = F.focusedChild(p)
+    if not b then return nil end
+    local osk = p.parent
+    local word
+    if b.chLower then
+        local upper = osk and (osk.capsLock or osk.shiftDown)
+        local ch = upper and b.chUpper or b.chLower
+        word = keyWords[ch] or (ch:match("%a") and (upper and ("capital " .. ch) or ch)) or ch
+    else
+        word = ZA.clean(b.title or "")
+    end
+    return b, word, "Typed: " .. oskText(osk)
+end

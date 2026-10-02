@@ -27,4 +27,49 @@ module Base
             distanceMax = 40,
         }
     }
+    sound ZA_Escape
+    {
+        category = Object,
+        clip
+        {
+            file = media/sound/za_escape.wav,
+            distanceMax = 40,
+        }
+    }
+    sound ZA_SteerLeft
+    {
+        category = Object,
+        clip
+        {
+            file = media/sound/za_steer_left.wav,
+            distanceMax = 40,
+        }
+    }
+    sound ZA_SteerRight
+    {
+        category = Object,
+        clip
+        {
+            file = media/sound/za_steer_right.wav,
+            distanceMax = 40,
+        }
+    }
+    sound ZA_Radio
+    {
+        category = Object,
+        clip
+        {
+            file = media/sound/za_radio.wav,
+            distanceMax = 40,
+        }
+    }
+    sound ZA_Bite
+    {
+        category = Object,
+        clip
+        {
+            file = media/sound/za_bite.wav,
+            distanceMax = 40,
+        }
+    }
 }

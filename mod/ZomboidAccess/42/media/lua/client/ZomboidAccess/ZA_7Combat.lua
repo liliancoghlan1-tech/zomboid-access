@@ -108,7 +108,7 @@ end
 function CB.firstChase()
     if CB.hintGiven then return "" end
     CB.hintGiven = true
-    return " To fight: push the right stick at it to aim, R2 swings, L2 shoves it away."
+    return " To fight: push the right stick at it to aim, or pull R2 halfway with Lock-on on, R2 all the way swings, L2 shoves it away. A way out beeps with two rising whistles."
 end
 
 if not CB.hooked then

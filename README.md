@@ -1,9 +1,11 @@
 Zomboid Access
 ==============
 
-Play Project Zomboid with the NVDA screen reader: menus, character creation, a scanner for everything around you, walking and travelling by itself, zombie warnings, health and moodles, combat feedback, inventory, looting and markers.
+Play Project Zomboid with the NVDA screen reader: menus, character creation, a scanner for everything around you, walking by itself (round zombies when they're near), zombie warnings and escape help, health and moodles, fighting with optional lock-on, inventory and looting, cooking, farming, foraging, fishing, crafting and building, driving with a steering tone or autodrive, and an interactive tutorial with a guide on the radio.
 
-This is an EARLY VERSION (0.6.1). It has been played through character creation, looting houses, fighting and dying many times, but not long-term survival. Building, driving, farming and the crafting window are not made accessible yet. Please send what doesn't work (see Feedback at the end).
+This is an EARLY VERSION (0.9.0). It has been played through character creation, the tutorial, looting houses, fighting and dying many times, but not long-term survival. Please send what doesn't work (see Feedback at the end).
+
+New here? Start with the tutorial: New game, Challenges, "Zomboid Access Tutorial" (see Tutorial below).
 
 Made by Lilian Coghlan. MIT licence. Street names and lines come from the game's own map data (Build 42.21).
 
@@ -27,6 +29,16 @@ Installing
 To remove it: run Uninstall.bat, then remove the add-on in NVDA (NVDA menu, Tools, Add-on store, Installed add-ons, Zomboid Access, Remove).
 
 The game mod writes what to say into a file (Zomboid\Lua\ZomboidAccess_speech.txt), and the NVDA add-on reads it out. Both are needed. The add-on reads only that file and the game's log; it doesn't use the network.
+
+
+Tutorial
+--------
+New game, then Challenges (the last game mode), then press Right to "Zomboid Access Tutorial", then Cross, and make a character. It's its own world: your saves are never touched.
+A quiet house by the river with no zombies until a lesson brings one, and a guide on the radio (a short radio crackle comes before each thing they say) who teaches the game and this mod one thing at a time: the scanner and doors, looting, eating and drinking, how you're doing, injuries and healing, fighting, lock-on and getting away, cooking, foraging, farming, fishing, crafting and building, and driving.
+- Each step waits until you've done it. Stuck for 40 seconds, you get a hint.
+- In the fighting lessons the zombies can't really hurt you: you're healed at once.
+- The You list starts with "Radio: say that again" and "Radio: choose a lesson" (to repeat one, or jump to another).
+- Where you are is kept in the save: quit and come back, and the guide picks up there.
 
 
 Menus and character creation
@@ -78,13 +90,15 @@ Everything around you, in categories, nearest first. Each line: name, state, dis
 Things on your floor come first, then things on your side of the walls, then the rest. Distances are straight lines, so something inside a building you're not in says "inside" or "in another building".
 
 The categories, in order:
-- You: where you are, what you're doing and how far along it is, health, each injury and each moodle with what it means and what to do, what you're carrying, the time, then Health screen, Skills, Zombie sounds (on or off) and Mark this spot (Square does each).
+- You: where you are, what you're doing and how far along it is, health, each injury and each moodle with what it means and what to do, what you're carrying, the time, then Health screen, Skills, Zombie sounds, Lock-on, Escape help and Driving help (each on or off) and Mark this spot (Square does each).
 - Markers: places you've marked.
 - Zombies: within 30 metres; the ones your character can't see say "out of sight"; "coming for you" if it's chasing you.
+- Ways out: doors, windows, empty window frames, fences and vehicles within 12 metres that can break a chase, best first, leaving out any that are towards a zombie. Each says what to do ("Door, closed: go through, then Cross closes it behind you"; windows and fences: Circle climbs).
 - Animals.
 - Loot: food and drink, weapons and ammo, medical, tools and materials, clothes and bags, books and papers, everything else. What's inside the containers of the building you're in (every floor), or within 8 metres outdoors, including bodies. Each line says which container it's in.
 - Doors (and gates), Windows (open, closed, broken, barricaded), Stairs (up and down).
 - Containers, Things on the ground, Water (sinks, toilets, baths, rain barrels, open water).
+- Crops: furrows and plants within 40 metres: the plant and its stage ("Seedling Carrots", "Ready to harvest Tomatoes", "Dead Cabbages"), its water ("water: thirsty"), and pests or mildew once your Farming is level 3, as the game shows them.
 - Beds and seats, Lights and appliances (switches on or off, TVs, radios, generators).
 - Bodies, Vehicles.
 - Places: shops, police, clinics, warehouses and so on within 600 metres, and every town on the map.
@@ -96,6 +110,7 @@ Walking, travelling and guide mode
 - Walk there (Square or End): the game's own pathfinding takes you next to it, round walls and through doors. On arrival your character faces it, so Cross uses it. Stairs work both ways.
 - Places, Houses, towns and markers are travelled to in stretches of about 30 metres, with a progress word every 50 metres.
 - Walking stops at once if a zombie you weren't told about comes close: "Stopped! Zombie, 6 metres up."
+- With zombies within 12 metres, walking goes round them: "Walking round the zombies to...". The route is planned square by square to keep away from them, walked in short stretches and planned again as they move. The last steps are the usual walk.
 - Guide mode (hold Triangle, or Shift and End) is for walking yourself: the target beeps from where it is, faster as you get closer; when the way to push the stick changes you hear it ("up-left, 6"); walking into something says "Blocked". The beep points in a straight line, so to leave a room, pick a door first. Far places beep from 15 metres ahead in their direction. Only you hear the beep; zombies don't.
 
 
@@ -134,12 +149,102 @@ The mod's own sounds, which only you hear (zombies don't):
 - A low double thump from each of the 3 nearest zombies that are chasing you within 20 metres, or any within 10 metres. It comes from where the zombie is, and gets faster as it gets closer.
 - A wood-block tick while you're aiming at a zombie close enough to hit.
 - A soft bell from the place you picked in guide mode.
-Switch the zombie sounds off or on in the You list (Zombie sounds, then Square).
+- Two quick rising whistles from the best way out while something chases you (Escape help).
+- Driving: a low blip means steer left, a high blip steer right; faster the more you need to turn.
+- Fishing: two little water plips when a fish bites.
+- The tutorial: a short radio crackle before the guide speaks.
+Switch the zombie sounds off or on in the You list (Zombie sounds, then Square); Escape help and Driving help have their own switches there.
 
 
 Fighting
 --------
 Push the right stick at a zombie to aim, R2 swings, L2 shoves it away. After each swing: "Hit", "Hit, down" (knocked over), "Killed" or "Miss". While aiming: "In reach" when a zombie is in front of you and close enough to hit. Aiming and timing stay yours.
+
+
+Driving
+-------
+You drive; the mod tells you where the road goes. (A mod can't steer or press the pedals: the game reads the controller itself.)
+- Getting in: the scanner's Vehicles category, then hold Square: you walk to the driver's door and get in. Or Cross at a car door. You hear the car's name, the engine, the key ("key in the ignition", "you have its key", "hotwired", "no key: it needs hotwiring") and the fuel.
+- The car's own menu: hold D-pad up (start the engine, hotwire, headlights, horn, windows, lock the doors, mechanics, get out). R2 accelerates, L2 reverses, Circle brakes, the left stick steers, Cross gets out.
+- Cruise control (the game's own): hold Square and press D-pad up or down to set the speed in steps of 5, tap Square to switch it on or off. The mod says "Cruise control 40 kilometres an hour" and "Cruise control off". With it on, you only steer.
+- The steering tone: while you drive forward, the mod looks down the road (further the faster you go) and finds its middle. A low blip means steer left, a high blip steer right; the more you need to turn, the faster they come. Silence means you're on line. Left and right are the car's, whichever way it faces.
+- Said by itself: "Engine running", "Engine off", what's in your path ("Car ahead, 20 metres", "Zombie ahead", "Something on the road", and trees or walls when they're close), "Junction ahead", "No road ahead", "Off the road", "Road again", "Crash!".
+- Quick status (Insert, or Share twice) in a vehicle starts with the speed, cruise control, fuel, engine and headlights.
+- Switch the tone and the driving words off or on: the You list, Driving help, then Square.
+
+Driving to a place
+- In the driver's seat, pick any place in the scanner: Places, Houses, a town, a marker, or anything nearby.
+- Square (or End): route guidance. The mod plans a way along the roads; the steering tone follows the route instead of just the road; you hear "Turn left in 40 metres", "Turn left now", how far to go every 200 metres, "The route is behind you: turn around", and "Arrived". Square again stops it.
+- Hold Square (or Delete): autodrive. The car drives itself along the same route: cruise control does the speed (20 km/h, slower for sharp turns and near zombies), the mod steers. Start the engine first. Brake (Circle) at any time and the car is yours again. It stops by itself for a car or something solid on the road ahead, and at the end.
+- Routes keep to roads, and are planned as far as the game has loaded round you (about 70 metres each way), then planned again as you go, so far places are fine.
+
+
+Escape help
+-----------
+While a zombie is chasing you, two quick rising whistles play from the best way out near you: a door to go through and close behind you, a window or empty frame to climb through, a fence to climb or hop, or a vehicle. They come faster as you get closer. Ways out that a chasing zombie is nearer to than you, or that are towards a zombie, are left out. When a chase starts you also hear where it is ("Way out: Door, closed: go through, then Cross closes it behind you, 5 metres up-left").
+To walk there round the zombies: the scanner's Ways out category, then Square. To switch the help off or on: the You list, Escape help, then Square.
+
+
+Lock-on
+-------
+Off until you switch it on (the You list, Lock-on, then Square; the choice is kept in your save). While it's on, your character turns to face the nearest zombie within about 3.5 metres (one that's chasing you first) and stays on it until it dies or gets away: "Locked on: Zombie, 2 metres right". It doesn't turn you while you walk, and pushing the right stick to aim somewhere else wins over it. The fighting stays yours: pull R2 halfway to aim, all the way to swing; L2 shoves.
+
+
+Choosing a square (digging, sowing, building)
+---------------------------------------------
+Some actions ask you to choose a square: digging a furrow, sowing seeds, and placing things. The mod says what it's for and the buttons, then after each move where the square is from you ("2 squares up-right"), whether you can do it there ("can dig furrow here", "can't sow here"), the ground (soil, gravel, grass, road), what's on it (a plant and how it's doing, a tree, a wall) and the game's own note ("Sow: Carrot Seeds, 5", "Not a furrow"). The D-pad moves the square one step: Up goes up-right, Right goes down-right, Down goes down-left, Left goes up-left. Cross does it, Circle cancels.
+
+
+Farming
+-------
+- Dig a furrow: with the scanner off, press Square: the game's menu for where you stand and what's in front of you. Choose Dig (or Dig with hands), then choose the square. You need soil: the square says "soil" when it's diggable. The square stays chosen after digging, so you can dig a row; Circle finishes.
+- Sow: stand by a furrow, press Square, choose Sow Seed and the seeds, then choose the furrow.
+- Look after it: the Crops category finds your plants; hold Square on one for the game's menu (Info, Water, Fertilize, Harvest, Treat Problem, Remove).
+
+
+Cooking and other windows
+-------------------------
+The game's small windows say their name, what they show and their buttons:
+- Oven and microwave: on or off, power, how warm it is, how many things are inside, and each dial ("Temperature: 350 degrees Fahrenheit", "Timer: 20 minutes", "Temperature: power 3 of 5"). Up and Down turn a dial, Left and Right move between dials, Cross turns it on or off from anywhere in the window. "Turned on" and "Turned off" are said.
+- Cooking by ear: food in anything hot near you (stove, oven, microwave, barbecue, campfire) is followed and said as it goes: "Steak cooking, in the chrome oven", "Steak, half cooked", "Steak is cooked: take it out before it burns", "Steak is about to burn!", "Steak has burnt". A steak takes about two minutes on a stove at normal speed.
+- Barbecue, campfire and generator: their information (fuel, condition, lit or not), said again when it changes.
+- Vehicle mechanics (Cross near a car's bonnet): the overall condition, then each part with its condition, fuel or charge, or "not installed". Left: engine and insides; Right: doors, body and lights. Cross on a part: what you can do with it.
+- Seats (Enter Vehicle in a car's menu): each seat, "the driver's seat", empty or taken. Left and Right across, Up and Down between rows, Cross sits, Square gets out by that door.
+- Other windows (alarm clock, radio, animal and so on) say their name and read their buttons, boxes and dials. More of them will get their own reading.
+
+
+Foraging
+--------
+Hold Share for the Share wheel and choose Enable search mode (the same wheel switches it off, and offers Pick up for the nearest find). Then walk slowly over grass and among trees.
+- "Search mode on" and "off".
+- "You sense something nearby" when your character starts spotting something (what a sighted player sees as the eye icon brightening; it gives no direction).
+- "Noticed: Blackberries, 4 metres up-left" when they spot it. Things you can't make out yet are "something you can't make out yet" until you're closer or more skilled, as in the game.
+- The scanner's Finds category lists what you've noticed; hold Square on one to walk over and pick it up.
+At night and when you're hurt you notice far less, as in the game.
+
+
+Fishing
+-------
+Bait the rod first: in your inventory, the rod, Cross, Fishing Rod, Right, Add Bait, then the bait. Hold it in both hands (Cross on it, Equip Two Hands). Find water with the scanner (Water, Open water), go to the edge.
+- Push the right stick towards the water: "Aiming at water. R2 casts."
+- R2 casts: "Line out, 8 metres. Wait for a bite."
+- A bite: two little water plips, then "Bite! Turn the right stick clockwise in circles to reel."
+- While reeling: "Tight! Ease off" (stop turning for a moment) or "Slack, keep reeling", and the distance every 2 metres.
+- "Landed it", "It got away", "The line broke". Circle stops fishing.
+
+
+Crafting and building
+---------------------
+The game's Crafting and Building windows are pictures; the mod gives you menus instead. They open from the You list (Craft, Build), and also in place of the game's windows when you choose Crafting or Building from the Share wheel.
+- First the categories, each with how many recipes it has.
+- Then that category's recipes: the ones you can make now first ("Saw Log, you can make it"), then the others with what's missing ("Wooden Crate, missing Nails").
+- Then one recipe: Make it (or Make several), and each thing it needs and each tool, with how many you have ("4 Nails, you have 10", "Tool: Hammer, kept, you have 1"), and about how long it takes. Progress is read out as for any action.
+- Building: Place it gives the square cursor (see Choosing a square): "Choose a square to build a Wooden Fence Post", each square says "can build here" or not; L1 and R1 turn it, Cross builds, Circle cancels.
+
+Sandbox settings and typing
+---------------------------
+- The sandbox settings screen (Custom Sandbox, and the settings of a new game) starts on the list of pages. Up and Down choose a page, Right goes into its settings, Left comes back. Each setting says its section, name, value, what Cross does, its place, and the game's own explanation. Circle from the pages reaches Start and Back; Down from there reaches the presets and the Advanced switch.
+- Cross on a text or number box opens the game's on-screen keyboard: each key is said, and what you've typed after each key. Square deletes, Triangle types a space, Circle cancels, Accept (the right end of the third row) finishes.
 
 
 Inventory and menus
@@ -158,12 +263,13 @@ Main menu screens
 - Mods: hold R1 and press Up to reach the list of mods; each says on or off, and Cross switches it.
 
 
-Not done yet
-------------
-- Building, driving, farming, fishing, foraging and the crafting window. (You can still craft: Cross on an item, then Craft.)
+Not done yet, and not right yet
+-------------------------------
+- Driving is the weakest part. The steering tone and autodrive work in tests, but driving by ear is still hard: the blips can feel late or busy, autodrive is slow (20 km/h) on purpose and can scrape a sharp bend, and dirt roads may not count as road. It works, it's just not the best yet. Feedback on driving is especially welcome.
+- Fighting with lock-on: tested in software, not yet confirmed by many players with a real R2.
+- Foraging and fishing: new in this version and lightly tested.
+- The radio and TV, and the details on the animal windows, read their controls but not yet everything they show.
 - The map is a picture; Places and Where you are cover what it shows.
-- Choosing an item in the round menus with the right stick: written but not yet confirmed by a player.
-- "Blocked" in guide mode: written but not yet confirmed by a player.
 - Only English.
 
 

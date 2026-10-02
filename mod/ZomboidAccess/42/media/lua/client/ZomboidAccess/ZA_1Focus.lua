@@ -47,14 +47,15 @@ function F.labelFor(ui)
             end
         end
     end
-    return best and ZA.clean(best.name or "") or ""
+    return best and (ZA.clean(best.name or ""):gsub("%s*:%s*$", "")) or ""
 end
 
 -- The words for a control, and its "value" (what changes while the focus stays put).
 function F.describe(ui)
     if ui == nil then return "", "" end
     local words, value = F.describeBare(ui)
-    local label = F.labelFor(ui)
+    -- a button carries its own name; the label beside it belongs to the control before it
+    local label = ui.Type == "ISButton" and "" or F.labelFor(ui)
     if label ~= "" and words ~= "" then words = label .. ": " .. words
     elseif label ~= "" then words = label end
     if label ~= "" and value ~= "" then value = label .. ": " .. value end
