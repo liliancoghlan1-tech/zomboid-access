@@ -32,7 +32,7 @@ local function words(a)
     local what = ""
     pcall(function()
         if a.item and a.item.getName and (t == "ISReadABook" or t == "ISResearchRecipe" or t == "ISEatFoodAction"
-            or t == "ISDrinkFromBottle" or t == "ISApplyBandage" or t == "ISWearClothing" or t == "ISEquipWeaponAction") then
+            or t == "ISDrinkFromBottle" or t == "ISWearClothing" or t == "ISEquipWeaponAction") then
             what = " " .. a.item:getName()
         end
     end)

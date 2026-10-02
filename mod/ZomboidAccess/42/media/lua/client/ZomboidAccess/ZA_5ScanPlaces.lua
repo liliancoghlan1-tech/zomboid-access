@@ -38,6 +38,8 @@ local function buildingKind(b)
     return nil
 end
 
+S.buildingKind = buildingKind
+
 -- The nearest point of a building's outline to the player.
 local function nearestPoint(b, px, py)
     local x1, y1, x2, y2 = b:getX(), b:getY(), b:getX2(), b:getY2()

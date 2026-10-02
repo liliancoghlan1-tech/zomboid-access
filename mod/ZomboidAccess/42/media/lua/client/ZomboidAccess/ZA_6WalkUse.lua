@@ -9,43 +9,58 @@ local W, S = ZA.W, ZA.S
 local function joypadData() return JoypadState.players and JoypadState.players[1] end
 
 -- Open the loot window on a container (it must be within reach), and select an item by name.
+-- On a pad the game remembers the chosen container by its PLACE in the list (backpackChoice), and rebuilds the list
+-- whenever you turn or step, so after a walk it used to jump to whatever you were facing. We set the place, ask the
+-- game to hold that container (setForceSelectedContainer), and keep putting it back for 2 seconds (W.pendingSelect).
+local function findButton(ui, container)
+    for i, b in ipairs(ui.backpacks or {}) do
+        if b.inventory == container then return b, i end
+    end
+end
+
+local function choose(ui, b, i, container)
+    ui.backpackChoice = i
+    ui:selectContainer(b)
+    ui:setForceSelectedContainer(container, 2000)
+end
+
 function W.openLoot(container, itemName)
     local ui = getPlayerLoot(0)
     ui:setVisible(true)
     pcall(function() ui:refreshBackpacks() end)
-    local found
-    for _, b in ipairs(ui.backpacks or {}) do
-        if b.inventory == container then found = b; break end
-    end
-    if not found then
+    local b, i = findButton(ui, container)
+    if not b then
         ZA.say("It's not within reach yet. Get right next to it.")
         return false
     end
-    ui:selectContainer(found)
-    local jd = joypadData()
-    if jd then
-        jd.focus = ui
-        updateJoypadFocus(jd)
-    end
-    if itemName then W.pendingSelect = { ui = ui, name = itemName, until_ = getTimestampMs() + 1000 } end
+    choose(ui, b, i, container)
+    if joypadData() then setJoypadFocus(0, ui) end
+    W.pendingSelect = { ui = ui, container = container, name = itemName, until_ = getTimestampMs() + 2000 }
     return true
 end
 
--- The list fills a frame later: then move the selection to the item.
+-- Every frame for 2 seconds: if the game swapped the container, put ours back; once the list shows it, select the item.
 ZA.onTick(function()
     local ps = W.pendingSelect
     if not ps then return end
     if getTimestampMs() > ps.until_ then W.pendingSelect = nil; return end
-    local pane = ps.ui.inventoryPane
-    if not pane or not pane.items or #pane.items == 0 then return end
+    local ui = ps.ui
+    if ui.inventoryPane.inventory ~= ps.container then
+        local b, i = findButton(ui, ps.container)
+        if b then choose(ui, b, i, ps.container) end
+        return
+    end
+    if not ps.name or ps.selected then return end
+    local pane = ui.inventoryPane
+    if not pane.items or #pane.items == 0 then return end
     for i, entry in ipairs(pane.items) do
         local item = (type(entry) == "table" and entry.items) and entry.items[1] or entry
         if item and instanceof(item, "InventoryItem") and item:getName() == ps.name then
             pane.joyselection = i - 1
+            ps.selected = true
             break
         end
     end
-    W.pendingSelect = nil
 end)
 
 -- The game's own menu for one object, as the pad's interact-options button opens it (ISButtonPrompt:interact).
@@ -95,6 +110,9 @@ function W.use()
         if d <= 1.9 and math.floor(z) == math.floor(p:getZ()) then
             W.openLoot(c, item)
         else
+            -- an open loot window reads out every container you pass on the way: put it away until you arrive
+            local jd = joypadData()
+            if jd and (jd.focus == getPlayerLoot(0) or jd.focus == getPlayerInventory(0)) then setJoypadFocus(0, nil) end
             W.afterArrive = function() W.openLoot(c, item) end
             W.go()
             if not W.action then W.afterArrive = nil end

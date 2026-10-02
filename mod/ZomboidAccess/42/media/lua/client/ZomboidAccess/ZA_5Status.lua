@@ -210,7 +210,7 @@ if not ST.ticking then
 end
 
 function ST.onKey(key)
-    if key ~= Keyboard.KEY_INSERT or not S.inWorld() then return end
+    if key ~= Keyboard.KEY_INSERT or isShiftKeyDown() or isCtrlKeyDown() or not S.inWorld() then return end
     -- with the inventory open, Insert describes the selected item instead
     local jd = ZA.joypad()
     local f = jd and jd.focus

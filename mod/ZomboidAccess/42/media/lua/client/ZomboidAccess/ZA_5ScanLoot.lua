@@ -66,7 +66,11 @@ table.insert(S.postBuilders, function(lists)
         local keep
         if building then keep = sq and sq:getBuilding() == building else keep = near(e) end
         if keep and e.container then
-            local title = e.baseName:gsub(",.*$", ""):lower()   -- "green counter", not "green counter, cupboard"
+            -- "green counter", not "green counter, cupboard"; but keep the part when the object has more than one
+            -- (a fridge's freezer, an oven's grill), or a frozen sausage sounds like it's in the fridge.
+            local title = e.baseName:lower()
+            local ok, nc = pcall(function() return e.obj:getContainerCount() end)
+            if not (ok and nc and nc > 1) then title = title:gsub(",.*$", "") end
             addContainer(lists, e.container, e.obj, title, e.x, e.y, e.z, e.key)
         end
     end

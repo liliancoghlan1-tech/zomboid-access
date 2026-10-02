@@ -3,9 +3,9 @@ Zomboid Access
 
 Play Project Zomboid with the NVDA screen reader: menus, character creation, a scanner for everything around you, walking and travelling by itself, zombie warnings, health and moodles, combat feedback, inventory, looting and markers.
 
-This is an EARLY VERSION (0.5.1). It has been played through character creation, looting houses, fighting and dying many times, but not long-term survival. Building, driving, farming, the crafting screens and the health screen are not made accessible yet. Please send what doesn't work (see Feedback at the end).
+This is an EARLY VERSION (0.6.1). It has been played through character creation, looting houses, fighting and dying many times, but not long-term survival. Building, driving, farming and the crafting window are not made accessible yet. Please send what doesn't work (see Feedback at the end).
 
-Made by Lilian Coghlan. MIT licence.
+Made by Lilian Coghlan. MIT licence. Street names and lines come from the game's own map data (Build 42.21).
 
 
 What you need
@@ -54,7 +54,7 @@ While the scanner is on (the left stick still walks; Cross still opens doors and
 - Square: walk there by itself (Square again stops). Hold Square: use it (see Using things).
 - Circle: scanner off. While the scanner is on, the D-pad doesn't open the game's round menus.
 
-Share is the same button as View, Back or Select on other controllers. Button names are spoken the PlayStation way (Cross, Circle, Square, Triangle).
+Share is the game's Back button: on an Xbox controller it's View (the small button with two squares), on a Switch Pro controller Minus, on others Select or Back. The PlayStation touchpad isn't used: the game doesn't see it. Button names are spoken the PlayStation way (Cross, Circle, Square, Triangle).
 
 In the inventory: click the right stick (R3) on an item to hear what it is and what it's for.
 
@@ -67,6 +67,7 @@ Keyboard
 - End: walk there (End again stops). Shift and End: guide mode.
 - Delete: use it.
 - Insert: quick status. With the inventory open: details of the selected item.
+- Shift and Insert: where you are.
 Left Ctrl also works instead of Shift, but left Ctrl is the game's Aim key, so Shift is better.
 
 
@@ -77,7 +78,7 @@ Everything around you, in categories, nearest first. Each line: name, state, dis
 Things on your floor come first, then things on your side of the walls, then the rest. Distances are straight lines, so something inside a building you're not in says "inside" or "in another building".
 
 The categories, in order:
-- You: what you're doing and how far along it is, health, each injury and each moodle with what it means and what to do, what you're carrying, the time, and Mark this spot.
+- You: where you are, what you're doing and how far along it is, health, each injury and each moodle with what it means and what to do, what you're carrying, the time, then Health screen, Skills, Zombie sounds (on or off) and Mark this spot (Square does each).
 - Markers: places you've marked.
 - Zombies: within 30 metres; the ones your character can't see say "out of sight"; "coming for you" if it's chasing you.
 - Animals.
@@ -114,6 +115,28 @@ Warnings and status, said by themselves
 - Long actions (reading, crafting, bandaging...): named after 2 seconds, then 25, 50 and 75 percent, then Finished or Stopped.
 
 
+Where you are, and the day
+--------------------------
+Shift and Insert, or the first line of the You list: the town, the street ("on Main St", or "near Chenault St, 16 metres up-right"), the building and room ("in a house, in the living room"), the floor, and your nearest marker. Street names come from the game's own map.
+Said by itself: "It'll be dark in about an hour", "Night has fallen", "Dawn", "Asleep" and "You woke up. It's 7:15 AM", and the day the power or the water goes off for good.
+
+
+Health screen and skills
+------------------------
+From the You list (Health screen, or Skills, then Square), or the game's Share menu (Player Info). L1 and R1 move between the tabs.
+- Health: up and down go through each hurt body part, with its injuries and what each one means. Cross shows what you can do for it (bandage, disinfect, stitch, splint, take out glass), with the things you carry. Your progress is then read out ("Bandaging, 75 percent, Finished bandaging").
+- Skills: each skill, its level, and how far you are to the next level.
+
+
+Sounds
+------
+The mod's own sounds, which only you hear (zombies don't):
+- A low double thump from each of the 3 nearest zombies that are chasing you within 20 metres, or any within 10 metres. It comes from where the zombie is, and gets faster as it gets closer.
+- A wood-block tick while you're aiming at a zombie close enough to hit.
+- A soft bell from the place you picked in guide mode.
+Switch the zombie sounds off or on in the You list (Zombie sounds, then Square).
+
+
 Fighting
 --------
 Push the right stick at a zombie to aim, R2 swings, L2 shoves it away. After each swing: "Hit", "Hit, down" (knocked over), "Killed" or "Miss". While aiming: "In reach" when a zombie is in front of you and close enough to hit. Aiming and timing stay yours.
@@ -125,11 +148,20 @@ Inventory and menus
 - R3 (or Insert) on an item: what kind of thing it is, weight, food values, weapon damage and reach, protection, what a book teaches, and how many crafting recipes use it, with examples.
 - Menus (Cross on an item or object): each choice, its place, "more inside, Right opens it", "not available", and its tooltip.
 - Round menus (holding a D-pad direction, holding Share): the choices are listed when it opens, and each is read as the right stick points at it; let go of the button to choose.
+- Dialogs (yes or no questions, warnings) read what they're asking first.
+
+
+Main menu screens
+-----------------
+- Load: each save with its game mode, when it was started, your character's name, alive or dead, and when you last played.
+- Options: each tab says its name (L1 and R1 change tab); every setting reads with its value, volume sliders as a number out of 10.
+- Mods: hold R1 and press Up to reach the list of mods; each says on or off, and Cross switches it.
 
 
 Not done yet
 ------------
-- Building, driving, farming, fishing, the crafting window, the health screen, the map, options and the mods list.
+- Building, driving, farming, fishing, foraging and the crafting window. (You can still craft: Cross on an item, then Craft.)
+- The map is a picture; Places and Where you are cover what it shows.
 - Choosing an item in the round menus with the right stick: written but not yet confirmed by a player.
 - "Blocked" in guide mode: written but not yet confirmed by a player.
 - Only English.

@@ -91,6 +91,9 @@ function F.describeBare(ui)
         local it = ui.items and ui.items[ui.selected]
         local v = it and ZA.clean(it.text or "") or "empty"
         return v .. ", " .. tostring(ui.selected) .. " of " .. tostring(#(ui.items or {})), v
+    elseif t == "ISVolumeControl" then
+        local v = tostring(ui.getVolume and ui:getVolume() or ui.volume or "?")
+        return "volume " .. v .. " of 10, Left and Right change it", "volume " .. v
     elseif t == "ISTextEntryBox" then
         local v = ui:getText() or ""
         return "edit box, " .. (v == "" and "empty" or v), v

@@ -9,7 +9,7 @@ ZA.G = ZA.G or {}
 local G = ZA.G
 local S = ZA.S
 
-G.sound = "TrapTimerLoop"   -- a short timer beep (about half a second), played at the target so it comes from its direction
+G.sound = "ZA_Chime"   -- our own soft bell (media/sound/za_chime.wav), played at the target so it comes from its direction
 G.entry = nil
 
 local function now() return getTimestampMs() end

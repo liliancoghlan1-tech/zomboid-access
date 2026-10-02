@@ -1,0 +1,30 @@
+module Base
+{
+    sound ZA_Zombie
+    {
+        category = Object,
+        clip
+        {
+            file = media/sound/za_zombie.wav,
+            distanceMax = 40,
+        }
+    }
+    sound ZA_Lock
+    {
+        category = Object,
+        clip
+        {
+            file = media/sound/za_lock.wav,
+            distanceMax = 20,
+        }
+    }
+    sound ZA_Chime
+    {
+        category = Object,
+        clip
+        {
+            file = media/sound/za_chime.wav,
+            distanceMax = 40,
+        }
+    }
+}
