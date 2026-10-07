@@ -26,6 +26,7 @@ end
 
 local function manager()
     local p = getPlayer()
+    if not p then return nil end -- menus: the game's own manager throws (and logs a stack) without a player
     local ok, m = pcall(function() return ISSearchManager.getManager(p) end)
     return ok and m or nil
 end

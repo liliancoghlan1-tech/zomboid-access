@@ -16,7 +16,7 @@ if (Get-Process -Name "ProjectZomboid64" -ErrorAction SilentlyContinue) {
 }
 # Build 42 empties the mod list on its very first start, so the game must have been started once before.
 if (-not (Test-Path (Join-Path $mods "reset-mods-42_00.txt"))) {
-    Say "Start Project Zomboid once, wait for the main menu, quit, then run Install again."
+    Say "Start Project Zomboid once, wait about a minute, close it with Alt F4, then run Install again. The first time, it stops on a Terms of Service screen that is silent until the mod is installed: closing it there is fine."
     Say "(The game clears its mod list the first time it starts, so installing before that would be undone.)"
     exit 1
 }

@@ -20,11 +20,13 @@ What you need
 
 Installing
 ----------
-1. Start Project Zomboid once, wait for the main menu, and quit. (The game clears its mod list the first time it starts.)
+1. Start Project Zomboid once, wait about a minute, then close it with Alt+F4. (The game clears its mod list the first time it starts.)
+   The very first time, the game stops on a Terms of Service screen before the main menu. Nothing reads it until the mod is installed, so just close the game there with Alt+F4.
 2. Unzip this folder anywhere and run Install.bat. It:
    - copies the mod into your Zomboid\mods folder and turns it on (other mods you use stay on),
    - opens the NVDA add-on: choose Yes, then let NVDA restart.
-3. Start Project Zomboid. The main menu speaks.
+3. Start Project Zomboid. If the Terms of Service screen comes up, it is read out: Up and Down move between its buttons, Enter presses one (it starts on Accept). With a controller, press Cross first, then the D-pad and Cross.
+   Then the main menu speaks.
 
 To remove it: run Uninstall.bat, then remove the add-on in NVDA (NVDA menu, Tools, Add-on store, Installed add-ons, Zomboid Access, Remove).
 
