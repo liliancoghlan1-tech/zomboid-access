@@ -15,7 +15,7 @@ What you need
 - Project Zomboid, Build 42 (made and tested on 42.21), on Windows.
 - NVDA 2024.1 or later.
 - The game set to English (the mod's own words are English; the game's words follow the game's language).
-- A controller is best (tested with a PlayStation 5 controller; any controller works, see Controller). The keyboard works too.
+- A controller (tested with a PlayStation 5 controller; any controller works, see Controller). The menus and character creation are read only through a controller. In the world, the keyboard keys below work too.
 
 
 Installing
@@ -26,7 +26,7 @@ Installing
    - copies the mod into your Zomboid\mods folder and turns it on (other mods you use stay on),
    - opens the NVDA add-on: choose Yes, then let NVDA restart.
 3. Start Project Zomboid. If the Terms of Service screen comes up, it is read out: Up and Down move between its buttons, Enter presses one (it starts on Accept). With a controller, press Cross first, then the D-pad and Cross.
-   Then the main menu speaks.
+   Then the main menu says "Press Cross on your controller to start": press Cross and it reads the menu. If it says "No controller found", connect one and press Cross.
 
 To remove it: run Uninstall.bat, then remove the add-on in NVDA (NVDA menu, Tools, Add-on store, Installed add-ons, Zomboid Access, Remove).
 
@@ -149,18 +149,18 @@ Sounds
 ------
 The mod's own sounds, which only you hear (zombies don't):
 - A low double thump from each of the 3 nearest zombies that are chasing you within 20 metres, or any within 10 metres. It comes from where the zombie is, and gets faster as it gets closer.
-- A wood-block tick while you're aiming at a zombie close enough to hit.
+- A wood-block tick while a zombie in front of you is close enough to hit (or about to be).
 - A soft bell from the place you picked in guide mode.
 - Two quick rising whistles from the best way out while something chases you (Escape help).
 - Driving: a low blip means steer left, a high blip steer right; faster the more you need to turn.
 - Fishing: two little water plips when a fish bites.
-- The tutorial: a short radio crackle before the guide speaks.
+- The tutorial: a short radio crackle before the guide speaks. The guide waits until other speech is finished, and other speech waits for the guide, so nothing cuts it off (except a zombie warning outside the tutorial).
 Switch the zombie sounds off or on in the You list (Zombie sounds, then Square); Escape help and Driving help have their own switches there.
 
 
 Fighting
 --------
-Push the right stick at a zombie to aim, R2 swings, L2 shoves it away. After each swing: "Hit", "Hit, down" (knocked over), "Killed" or "Miss". While aiming: "In reach" when a zombie is in front of you and close enough to hit. Aiming and timing stay yours.
+Push the right stick at a zombie to aim, R2 swings, L2 shoves it away. After each swing: "Hit", "Hit, down" (knocked over), "Killed" or "Miss". "In reach" (and the wood-block tick) when a zombie in front of you is close enough to hit, or will be by the time your swing lands: it allows for how fast the zombie is coming, so you have time to pull R2. It works whether you aim first or pull R2 straight through. Aiming and timing stay yours.
 
 
 Driving

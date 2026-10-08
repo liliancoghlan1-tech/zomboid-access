@@ -1,6 +1,7 @@
 -- Zomboid Access: core.
 -- Speech: every line goes to Zomboid/Lua/ZomboidAccess_speech.txt, which our NVDA add-on reads aloud.
---   "S<tab>text" = say now (interrupts), "Q<tab>text" = say after what is already speaking.
+--   "S<tab>text" = say now (interrupts), "Q<tab>text" = say after what is already speaking,
+--   "G<tab>text" = the tutorial guide (protected), "U<tab>text" = urgent (see ZA.say below).
 -- Every line is also printed to console.txt with a [ZA] tag, so a test can read what was said.
 -- Test channel (developers only): lines written to Zomboid/Lua/ZomboidAccess_cmd.txt are run as Lua, one per
 -- tick, ONLY when Zomboid/Lua/ZomboidAccess_dev.txt exists. Players never have that file, so for them it's off.
@@ -14,7 +15,7 @@ function ZA.mod(a, n)
     if r < 0 then r = r + n end
     return r
 end
-ZA.version = "0.9.1"
+ZA.version = "0.9.2"
 ZA.speechFile = "ZomboidAccess_speech.txt"
 ZA.cmdFile = "ZomboidAccess_cmd.txt"
 
@@ -56,10 +57,12 @@ local function write(kind, text)
         w:write(kind .. "\t" .. text .. "\n")
         w:close()
     end
-    print("[ZA] " .. (kind == "Q" and "+ " or "") .. text)
+    print("[ZA] " .. (kind == "S" and "" or kind .. " ") .. text)
 end
 
-function ZA.say(text, queue)
+-- kind: "S" say now (interrupts), "Q" after what is speaking, "G" the tutorial guide (waits for what is
+-- speaking, and nothing but "U" cuts it off), "U" urgent: danger and combat, always at once.
+local function speak(text, kind)
     text = ZA.clean(text)
     if text == "" then return end
     local now = getTimestampMs()
@@ -67,10 +70,18 @@ function ZA.say(text, queue)
     if text == lastText and now - lastTime < 500 then return end
     lastText, lastTime = text, now
     ZA.last = text
-    write(queue and "Q" or "S", text)
+    write(kind, text)
 end
 
-function ZA.queue(text) ZA.say(text, true) end
+function ZA.say(text, queue) speak(text, queue and "Q" or "S") end
+function ZA.queue(text) speak(text, "Q") end
+function ZA.guide(text) speak(text, "G") end
+-- In the tutorial nothing can really hurt you, so there the guide's words win: urgent is plain "S" there.
+function ZA.urgent(text)
+    local tutorial = false
+    pcall(function() tutorial = ZA.TU and ZA.TU.active and ZA.TU.active() end)
+    speak(text, tutorial and "S" or "U")
+end
 
 function ZA.repeatLast()
     if ZA.last then lastText = nil; ZA.say(ZA.last) end

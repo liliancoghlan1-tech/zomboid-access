@@ -69,7 +69,7 @@ function LK.tick()
     if not t then t = pick(p) end
     if t ~= LK.target then
         if t then
-            ZA.say("Locked on: " .. S.threatText(t))
+            ZA.urgent("Locked on: " .. S.threatText(t))
         elseif LK.target then
             ZA.say("Lock-on free")
         end

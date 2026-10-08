@@ -1,16 +1,20 @@
 # Zomboid Access for NVDA.
 # The Zomboid Access game mod writes one line per thing to say into
 # %USERPROFILE%\Zomboid\Lua\ZomboidAccess_speech.txt. This plugin watches that file and speaks
-# each new line. A line is "S<tab>text" (say now, interrupting) or "Q<tab>text" (say after).
+# each new line. A line is "S<tab>text" (say now, interrupting), "Q<tab>text" (say after),
+# "G<tab>text" (the tutorial guide: protected, see _speak) or "U<tab>text" (urgent: always interrupts).
 # It only reads that one file: no network, no other programs.
 
 import os
+import time
 
+import braille
 import globalPluginHandler
 import speech
 import ui
 import wx
 from logHandler import log
+from speech.commands import CallbackCommand
 
 SPEECH_FILE = os.path.join(os.path.expandvars("%USERPROFILE%"), "Zomboid", "Lua", "ZomboidAccess_speech.txt")
 # While the world loads, and on the screen after it, the game runs no mod code. Its own log says
@@ -28,6 +32,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         self._partial = b""
         self._consoleOffset = self._size(CONSOLE_FILE)
         self._consoleTail = b""
+        self._guidePending = 0
+        self._guardUntil = 0.0
         self._timer = wx.Timer()
         self._timer.Bind(wx.EVT_TIMER, self._poll)
         self._timer.Start(POLL_MS)
@@ -90,16 +96,39 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
         for raw in lines:
             self._speak(raw.decode("utf-8", "replace").rstrip("\r"))
 
-    @staticmethod
-    def _speak(line):
+    # The tutorial guide ("G") waits for what is being said, and while the guide talks, ordinary "S" lines
+    # wait too instead of cutting it off. Only "U" (danger, combat) interrupts everything.
+    # The guard ends when the guide's words have been spoken (a callback at the end of the line), or after a
+    # generous time limit (if the player silences NVDA with Control, the callback never comes).
+    def _guideDone(self):
+        self._guidePending = max(0, self._guidePending - 1)
+
+    def _guarded(self):
+        if self._guidePending and time.monotonic() < self._guardUntil:
+            return True
+        self._guidePending = 0
+        return False
+
+    def _speak(self, line):
         if not line:
             return
         kind, _, text = line.partition("\t")
         if not text:
             kind, text = "S", line
         try:
-            if kind == "S":
+            if kind == "G":
+                now = time.monotonic()
+                self._guardUntil = max(self._guardUntil, now) + 2.0 + 0.35 * len(text.split())
+                self._guidePending += 1
+                speech.speak([text, CallbackCommand(self._guideDone)])
+                try:
+                    braille.handler.message(text)
+                except Exception:
+                    pass
+                return
+            if kind == "U" or (kind == "S" and not self._guarded()):
                 speech.cancelSpeech()
+                self._guidePending = 0
             ui.message(text)
         except Exception:
             log.error("zomboidAccess: could not speak %r" % line, exc_info=True)

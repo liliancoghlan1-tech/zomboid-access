@@ -76,7 +76,7 @@ end
 function A.say(text)
     A.lastSaid = getTimestampMs()
     print("[ZA] alert: " .. text)
-    ZA.say(text)
+    ZA.urgent(text)
 end
 
 if not A.ticking then

@@ -318,7 +318,7 @@ function W.watch()
             W.action, W.entry, W.travel, W.safe = nil, nil, nil, nil
             ISTimedActionQueue.clear(p)
             print("[ZA] walk stopped by zombie " .. (e and e.key or ""))
-            ZA.say("Stopped! " .. S.threatText(z) .. ".")
+            ZA.urgent("Stopped! " .. S.threatText(z) .. ".")
             return
         end
     end

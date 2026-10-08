@@ -46,8 +46,8 @@ ZA.TUL = {
         done = "Got them.",
     },
     closeLoot = {
-        say = "Circle closes the cupboard and puts you back in the world. Do that whenever you're done with a window.",
-        hint = "Circle. Once or twice, until you stop hearing the cupboard.",
+        say = "Triangle closes the cupboard and puts you back in the world. Same for your inventory, whenever you're done with it.",
+        hint = "Triangle. Not Circle: in a list, Circle only opens or closes a stack of things.",
         done = "Back in the room.",
     },
     eat = {
@@ -67,7 +67,7 @@ ZA.TUL = {
     },
     youList = {
         say = "For more, the first list in the scanner, called You, explains each feeling and injury and what to do about it.",
-        hint = "If a window is open, Circle closes it first. Then the scanner, and D-pad left until you hear You.",
+        hint = "If your inventory or a cupboard is open, Triangle closes it first. Then the scanner, and D-pad left until you hear You.",
         done = "That's everything about you, in one place. That's the basics done. Take a breather if you like.",
     },
 
@@ -99,12 +99,12 @@ ZA.TUL = {
     -- ---- fighting ----
     weapon = {
         say = "Next bit's a fight, so here's the good news: in this house, they can't really hurt you. Practise all you like. I've put a baseball bat in your bag. Triangle opens your inventory. Pick the bat, press Cross, and choose Equip Two Hands.",
-        hint = "Triangle, the bat, Cross, Equip Two Hands. Then Circle until you're back in the world.",
+        hint = "Triangle, the bat, Cross, Equip Two Hands. Then Triangle to close the inventory.",
         done = "Bat in hand.",
     },
     closeInv = {
-        say = "Circle closes the inventory.",
-        hint = "Circle, until you stop hearing your inventory.",
+        say = "Triangle closes the inventory.",
+        hint = "Triangle, once.",
     },
     zombieComing = {
         say = "One's coming. Hear the low thump? That's it, and it comes from where it is. The closer it gets, the faster the thump. Push the right stick towards the thump to aim, and pull R2 all the way to swing.",
@@ -141,8 +141,8 @@ ZA.TUL = {
         done = "Steak's in.",
     },
     cookClose = {
-        say = "Circle closes the oven, and Circle again switches the scanner off.",
-        hint = "Circle, then Circle again, until you stop hearing the oven.",
+        say = "Triangle closes the oven, and then Circle switches the scanner off.",
+        hint = "Triangle, then Circle.",
     },
     cookOn = {
         say = "Now light it. You're standing at the stove. Press Square: that's the menu for what's in front of you. Choose Turn On.",
@@ -201,12 +201,12 @@ ZA.TUL = {
     -- ---- fishing ----
     fishBait = {
         say = "Fishing next. I've put a fishing rod and some worms in your bag. A hook needs bait first. Triangle opens your inventory. Pick the rod, press Cross, choose Fishing Rod, press Right to go into it, choose Add Bait, then the worm.",
-        hint = "Triangle, the rod, Cross, Fishing Rod, Right, Add Bait, Worm. Circle closes the inventory after.",
+        hint = "Triangle, the rod, Cross, Fishing Rod, Right, Add Bait, Worm. Triangle closes the inventory after.",
         done = "Baited.",
     },
     fishEquip = {
         say = "Now hold the rod. Cross on it again and choose Equip Two Hands.",
-        hint = "In your inventory, the rod, Cross, Equip Two Hands. Then Circle until you're back in the world.",
+        hint = "In your inventory, the rod, Cross, Equip Two Hands. Then Triangle to close the inventory.",
         done = "Rod in hand.",
     },
     fishGo = {

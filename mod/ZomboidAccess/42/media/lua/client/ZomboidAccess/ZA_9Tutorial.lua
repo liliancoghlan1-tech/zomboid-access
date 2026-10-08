@@ -85,7 +85,9 @@ function TU.radio(line, queue)
         local p = getPlayer()
         getSoundManager():PlayWorldSoundImpl("ZA_Radio", false, math.floor(p:getX()), math.floor(p:getY()), math.floor(p:getZ()), 0, 40, 1, false)
     end)
-    if queue then ZA.queue(line) else ZA.say(line) end
+    -- the guide waits for whatever is being said, and other speech waits for the guide (a player's report:
+    -- lines got cut off); only urgent danger and combat words cut in
+    ZA.guide(line)
 end
 
 -- ---------- helpers for the checks ----------
