@@ -255,7 +255,7 @@ function DR.getIn(p, v)
     local state = (v:isEngineRunning() and "engine running" or "engine off") .. ", " .. keyWords(p, v) .. ", fuel "
         .. math.floor(v:getRemainingFuelPercentage() + 0.5) .. " percent"
     local parts = { "In the driver's seat of the " .. name .. ", " .. state }
-    table.insert(parts, "Hold D-pad up: the car's menu, to start the engine or hotwire it. R2 accelerates, L2 reverses, Circle brakes, the left stick steers. Cross gets out")
+    table.insert(parts, "Hold D-pad up: the car's menu, to start the engine or hotwire it. {R2} accelerates, {L2} reverses, {Circle} brakes, the left stick steers. {Cross} gets out")
     return table.concat(parts, ". ")
 end
 
@@ -285,7 +285,7 @@ table.insert(S.builders, function(lists)
         name = function()
             local on = DR.isOn()
             return "Driving help: " .. (on and "on" or "off") .. ". While you drive, a low blip means steer left, a high "
-                .. "blip steer right; things in your path are said. Square turns it " .. (on and "off" or "on")
+                .. "blip steer right; things in your path are said. {Square} turns it " .. (on and "off" or "on")
         end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()

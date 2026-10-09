@@ -28,6 +28,7 @@ import ctypes
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import threading
@@ -49,13 +50,31 @@ LOADED_MARK = b"game loading took"
 STARTING_TEXT = "Starting Project Zomboid. This takes about a minute."
 STILL_STARTING_TEXT = "Still starting."
 STILL_LOADING_TEXT = "Still loading the world."
-LOADED_TEXT = "The world has loaded. Press Cross to begin, or click the left mouse button."
-STILL_WAITING_TEXT = "The world is ready. Press Cross to begin, or click the left mouse button."
+LOADED_TEXT = "The world has loaded. Press {Cross} to begin, or click the left mouse button."
+STILL_WAITING_TEXT = "The world is ready. Press {Cross} to begin, or click the left mouse button."
 LEAVING_TEXT = "Leaving the world and saving. Please wait."
 STILL_LEAVING_TEXT = "Still saving."
 REMIND_S = 20.0  # how long a silent loading screen waits before saying it's still there
 
 log = logging.getLogger("zomboidAccess")
+
+# Button names as the game's Controller option "Button style" labels them, like the mod: 1 Xbox, 2 PlayStation,
+# 3 Steam Deck. Our own lines write {Cross}.
+OPTIONS_FILE = os.path.join(ZOMBOID, "options.ini")
+BUTTON_NAMES = {"1": {"Cross": "A"}, "3": {"Cross": "A"}}
+
+
+def buttons(text):
+    style = "2"
+    try:
+        with open(OPTIONS_FILE, encoding="utf-8", errors="replace") as f:
+            for line in f:
+                if line.startswith("controllerButtonStyle="):
+                    style = line.split("=", 1)[1].strip()
+    except OSError:
+        pass
+    names = BUTTON_NAMES.get(style, {})
+    return re.sub(r"{(\w+)}", lambda m: names.get(m.group(1), m.group(1)), text)
 
 
 def _here():
@@ -350,7 +369,7 @@ class Loading:
         self.lastSaid = time.monotonic()
 
     def _say(self, text):
-        self.speaker.say("S\t" + text)
+        self.speaker.say("S\t" + buttons(text))
         self.lastSaid = time.monotonic()
 
     def heard(self):

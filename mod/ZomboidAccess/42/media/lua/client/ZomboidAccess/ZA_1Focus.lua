@@ -58,7 +58,8 @@ function F.describe(ui)
     local label = ui.Type == "ISButton" and "" or F.labelFor(ui)
     if label ~= "" and words ~= "" then words = label .. ": " .. words
     elseif label ~= "" then words = label end
-    if label ~= "" and value ~= "" then value = label .. ": " .. value end
+    -- The value alone: the name is said when you arrive on a control, not again each time its value changes
+    -- ("Maryanne", not "Voice type: Maryanne").
     return words, value
 end
 
@@ -76,7 +77,7 @@ function F.describeBare(ui)
         -- first, and only past the last (or first) one to the next row, so say the box the cursor is on.
         local n, i = #ui.options, ui.joypadIndex or 1
         local v = str(ui.options[i]) .. (ui.selected[i] and ", checked" or ", not checked") .. ", " .. i .. " of " .. n
-        return v .. ". Up and Down move between the " .. n .. " boxes, then on; Cross ticks or unticks", v
+        return v .. ". Up and Down move between the " .. n .. " boxes, then on; {Cross} ticks or unticks", v
     elseif t == "ISTickBox" then
         local parts = {}
         for i, o in ipairs(ui.options or {}) do
@@ -93,7 +94,7 @@ function F.describeBare(ui)
             return v .. ", " .. i .. " of " .. #(ui.popup.items or {}), v
         end
         local v = F.comboText(ui)
-        return v .. ", " .. tostring(ui.selected) .. " of " .. tostring(#(ui.options or {})) .. ", drop-down list, Cross opens it", v
+        return v .. ", " .. tostring(ui.selected) .. " of " .. tostring(#(ui.options or {})) .. ", drop-down list, {Cross} opens it", v
     elseif t == "ISScrollingListBox" then
         local it = ui.items and ui.items[ui.selected]
         local v = it and ZA.clean(it.text or "") or "empty"
@@ -114,7 +115,7 @@ end
 
 -- ---------- screens ----------
 -- PlayStation names for the face buttons the game maps per screen.
-F.padNames = { A = "Cross", B = "Circle", X = "Square", Y = "Triangle" }
+F.padNames = { A = "{Cross}", B = "{Circle}", X = "{Square}", Y = "{Triangle}" }
 
 -- Names and a one-line purpose for whole screens, by their Lua type.
 F.screens = {

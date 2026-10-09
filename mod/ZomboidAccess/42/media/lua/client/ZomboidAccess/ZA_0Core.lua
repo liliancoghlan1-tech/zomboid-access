@@ -21,17 +21,33 @@ ZA.cmdFile = "ZomboidAccess_cmd.txt"
 
 -- ---------- text ----------
 
--- Controller buttons drawn as pictures in game text (<JOYPAD:AButton,28,28>, .../PS4_A.png),
--- named the PlayStation way.
+-- Button names. The mod's own words write a button as {Cross}, {R2}, {Share}... (the PlayStation names), and they
+-- are said the way the game's own Controller option "Button style" labels them: Xbox, PlayStation or Steam Deck.
+-- Only these marks change, never the game's own text ("Square Table", "Wooden Cross").
+ZA.buttonNames = {
+    [1] = { Cross = "A", Circle = "B", Square = "X", Triangle = "Y", L1 = "LB", R1 = "RB", L2 = "LT", R2 = "RT",
+        L3 = "the left stick click", R3 = "the right stick click", Share = "View", Options = "Menu" },
+    [3] = { Cross = "A", Circle = "B", Square = "X", Triangle = "Y", Share = "View", Options = "Menu" },
+}
+function ZA.buttonStyle()
+    local ok, style = pcall(function() return getCore():getOptionControllerButtonStyle() end)
+    return ok and style or 2
+end
+function ZA.buttons(text)
+    local names = ZA.buttonNames[ZA.buttonStyle()] or {}
+    return (text:gsub("{(%w+)}", function(b) return names[b] or b end))
+end
+
+-- Controller buttons drawn as pictures in game text (<JOYPAD:AButton,28,28>, .../PS4_A.png).
 ZA.padWords = {
-    AButton = "Cross", BButton = "Circle", XButton = "Square", YButton = "Triangle",
-    A = "Cross", B = "Circle", X = "Square", Y = "Triangle",
-    LBumper = "L1", RBumper = "R1", LB = "L1", RB = "R1",
-    LTrigger = "L2", RTrigger = "R2", LT = "L2", RT = "R2",
+    AButton = "{Cross}", BButton = "{Circle}", XButton = "{Square}", YButton = "{Triangle}",
+    A = "{Cross}", B = "{Circle}", X = "{Square}", Y = "{Triangle}",
+    LBumper = "{L1}", RBumper = "{R1}", LB = "{L1}", RB = "{R1}",
+    LTrigger = "{L2}", RTrigger = "{R2}", LT = "{L2}", RT = "{R2}",
     LStick = "the left stick", RStick = "the right stick",
-    LStickButton = "L3", RStickButton = "R3",
+    LStickButton = "{L3}", RStickButton = "{R3}",
     DPadUp = "D-pad up", DPadDown = "D-pad down", DPadLeft = "D-pad left", DPadRight = "D-pad right",
-    DPad = "the D-pad", Back = "Share", Start = "Options", Select = "Share",
+    DPad = "the D-pad", Back = "{Share}", Start = "{Options}", Select = "{Share}",
 }
 
 function ZA.clean(text)
@@ -44,7 +60,7 @@ function ZA.clean(text)
     text = text:gsub("[\r\n\t]+", " ")
     text = text:gsub("%s%s+", " ")
     text = text:gsub("^%s+", ""):gsub("%s+$", "")
-    return text
+    return ZA.buttons(text)
 end
 
 -- ---------- speech ----------

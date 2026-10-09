@@ -56,7 +56,7 @@ function TS.tick()
         keys.up, keys.down, keys.enter = isKeyDown(Keyboard.KEY_UP), isKeyDown(Keyboard.KEY_DOWN), isKeyDown(Keyboard.KEY_RETURN)
         local text = getText("UI_TermsOfService_Prompt1")
         ZA.say(F.screens.ISTermsOfServiceUI.name .. ". " .. text)
-        ZA.queue("Keyboard: Up and Down move between the buttons, Enter presses one. Controller: press Cross first, then the D-pad and Cross.")
+        ZA.queue("Keyboard: Up and Down move between the buttons, Enter presses one. Controller: press {Cross} first, then the D-pad and {Cross}.")
         ZA.queue(buttonWords(p, TS.index))
         print("[ZA] terms of service panel read")
         return

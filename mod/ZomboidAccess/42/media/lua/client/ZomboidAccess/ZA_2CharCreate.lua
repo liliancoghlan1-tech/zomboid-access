@@ -11,10 +11,10 @@ local CC = {}
 ZA.CC = CC
 
 local AREAS = {
-    { field = "listboxProf", name = "Occupations", cross = "Cross chooses this occupation" },
-    { field = "listboxTrait", name = "Good traits, they cost points", cross = "Cross adds the trait" },
-    { field = "listboxBadTrait", name = "Bad traits, they give you points", cross = "Cross adds the trait" },
-    { field = "listboxTraitSelected", name = "Your traits", cross = "Cross removes the trait" },
+    { field = "listboxProf", name = "Occupations", cross = "{Cross} chooses this occupation" },
+    { field = "listboxTrait", name = "Good traits, they cost points", cross = "{Cross} adds the trait" },
+    { field = "listboxBadTrait", name = "Bad traits, they give you points", cross = "{Cross} adds the trait" },
+    { field = "listboxTraitSelected", name = "Your traits", cross = "{Cross} removes the trait" },
 }
 
 local function screen(panel)
@@ -37,10 +37,12 @@ local function points(s)
     return ok and n or nil
 end
 
-local function pointsWords(n)
+-- short: while moving through a list, just the number; what to do about it is said with the screen.
+local function pointsWords(n, short)
     if n == nil then return "" end
     if n < 0 then
-        return (-n) .. ((-n) == 1 and " point" or " points") .. " over budget: add bad traits or remove good ones before you can go on"
+        return (-n) .. ((-n) == 1 and " point" or " points") .. " over budget"
+            .. (short and "" or ": add bad traits or remove good ones before you can go on")
     end
     return n .. (n == 1 and " point left" or " points left")
 end
@@ -92,7 +94,10 @@ F.readers.CharacterCreationProfessionListBox = function(p)
     local words = ZA.clean(it.text or "") .. (extra ~= "" and (", " .. extra) or "") .. ", " .. p.selected .. " of " .. #p.items
     if desc ~= "" then words = words .. ". " .. desc end
     local what = changes(s)
-    return it, words, (what ~= "" and (what .. ". ") or "") .. pointsWords(n)
+    -- Moving in the occupations list chooses what you land on: its name is already the line itself, so don't
+    -- say "Occupation: Burglar" before "Burglar" on every step.
+    if a.field == "listboxProf" and what == "Occupation: " .. ZA.clean(it.text or "") then what = "" end
+    return it, words, (what ~= "" and (what .. ". ") or "") .. pointsWords(n, true)
 end
 
 -- Arriving in a list: the whole screen's instructions the first time, then just the list's name.
@@ -108,8 +113,8 @@ F.screens.CharacterCreationProfessionListBox = {
             table.insert(parts, pointsWords(points(s)))
             table.insert(parts, a.name)
             table.insert(parts, "Up and Down move. " .. a.cross)
-            table.insert(parts, "L1 and R1 switch between occupations, good traits, bad traits and your traits")
-            table.insert(parts, "When you're done, press Circle, then Cross for the next screen")
+            table.insert(parts, "{L1} and {R1} switch between occupations, good traits, bad traits and your traits")
+            table.insert(parts, "When you're done, press {Circle}, then {Cross} for the next screen")
         else
             table.insert(parts, a.name)
             table.insert(parts, a.cross)

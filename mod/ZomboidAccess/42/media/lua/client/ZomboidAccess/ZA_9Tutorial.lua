@@ -690,7 +690,7 @@ table.insert(S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
         cat = "you", key = "you|radio", noWhere = true, order = 0, baseName = "Radio",
-        name = function() return "Radio: say that again. Square" end,
+        name = function() return "Radio: say that again. {Square}" end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()
             local st = state()
@@ -755,7 +755,7 @@ table.insert(S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
         cat = "you", key = "you|lessons", noWhere = true, order = 0.5, baseName = "Lessons",
-        name = function() return "Radio: choose a lesson. Square" end,
+        name = function() return "Radio: choose a lesson. {Square}" end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function() TU.chooseLesson() end,
     })

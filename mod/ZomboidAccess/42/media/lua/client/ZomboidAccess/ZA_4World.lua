@@ -10,8 +10,33 @@ if forceChangeState and not ZA.wrappedState then
     ZA.wrappedState = true
     local orig = forceChangeState
     forceChangeState = function(state, ...)
-        ZA.say("Loading the world. This takes a minute or two. When it's ready you'll hear: the world has loaded, press Cross to begin.")
+        ZA.say("Loading the world. This takes a minute or two. When it's ready you'll hear: the world has loaded, press {Cross} to begin.")
         return orig(state, ...)
+    end
+end
+
+-- Continue and Load: a save closed on the "press to start" screen has no mods.txt yet, and the game's own check
+-- (MainScreen.checkSaveFile -> getMissingMods) then fails on it with an error and nothing on screen, so Continue
+-- silently did nothing. A save without mods.txt loads with your usual mods (continueLatestSaveAux already says
+-- so), so it has no missing mods.
+if MainScreen and MainScreen.getMissingMods and not ZA.wrappedMissingMods then
+    ZA.wrappedMissingMods = true
+    local orig = MainScreen.getMissingMods
+    MainScreen.getMissingMods = function(activeMods, ...)
+        if activeMods == nil then return {} end
+        return orig(activeMods, ...)
+    end
+end
+-- Anything else that stops Continue is said, instead of nothing happening.
+if MainScreen and MainScreen.continueLatestSave and not ZA.wrappedContinue then
+    ZA.wrappedContinue = true
+    local orig = MainScreen.continueLatestSave
+    MainScreen.continueLatestSave = function(...)
+        local ok, err = pcall(orig, ...)
+        if not ok then
+            print("[ZA] continue failed: " .. tostring(err))
+            ZA.say("Couldn't continue that save: the game ran into an error. Try Load instead.")
+        end
     end
 end
 
@@ -40,7 +65,7 @@ end)
 -- The survival guide that opens on a new game.
 F.screens.SurvivalGuide = { name = "Survival guide" }
 F.screens.ISPostDeathUI = { name = "You died" }
-F.screens.ISBackButtonWheel = { name = "Share menu" }
+F.screens.ISBackButtonWheel = { name = "{Share} menu" }
 local origName = F.screenName
 function F.screenName(panel)
     if panel and panel.parent and panel.parent.Type == "SurvivalGuide" then

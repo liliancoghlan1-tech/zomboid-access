@@ -109,8 +109,8 @@ F.screens.ISInventoryPage = {
     intro = function(page)
         local who = page.onCharacter and "Your inventory" or "Nearby"
         return who .. ": " .. containerWords(page) .. ". Up and Down: items. Left and Right: your inventory or what's nearby. "
-            .. (page.onCharacter and "L1: next bag. " or "R1: next container. ")
-            .. "Cross: item options. Square: take or put. Circle: open or close a stack. Triangle: close"
+            .. (page.onCharacter and "{L1}: next bag. " or "{R1}: next container. ")
+            .. "{Cross}: item options. {Square}: take or put. {Circle}: open or close a stack. {Triangle}: close"
     end,
 }
 
@@ -137,7 +137,7 @@ end
 F.screens.ISContextMenu = {
     intro = function(menu)
         local back = menu.parent and menu.parent.Type == "ISContextMenu"
-        return (back and "Submenu" or "Options") .. ". Up and Down choose, Cross does it, " .. (back and "Left goes back" or "Circle closes")
+        return (back and "Submenu" or "Options") .. ". Up and Down choose, {Cross} does it, " .. (back and "Left goes back" or "{Circle} closes")
     end,
 }
 
@@ -163,7 +163,7 @@ local function radialIntro(menu)
     end
     if n == 0 then return "Round menu, empty. Nothing to choose here." end
     local how = menu.hideWhenButtonReleased and "point the right stick at one and let go of the button to choose"
-        or "point the right stick at one, Cross chooses, Circle closes"
+        or "point the right stick at one, {Cross} chooses, {Circle} closes"
     return "Round menu, " .. n .. " choices: " .. table.concat(names, ", ") .. ". " .. how:sub(1, 1):upper() .. how:sub(2)
 end
 
@@ -266,7 +266,7 @@ function F.itemDetails(item)
             table.insert(parts, "Not used in any recipe")
         end
     end)
-    table.insert(parts, "Cross shows what you can do with it")
+    table.insert(parts, "{Cross} shows what you can do with it")
     for i, t in ipairs(parts) do parts[i] = tostring(t):gsub("[%.%s]+$", "") end
     return table.concat(parts, ". ") .. "."
 end

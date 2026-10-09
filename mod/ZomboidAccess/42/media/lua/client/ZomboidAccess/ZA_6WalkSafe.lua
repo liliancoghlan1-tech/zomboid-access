@@ -227,7 +227,7 @@ function WS.start(p, e, warn)
     local zl = getCell():getZombieList()
     for i = 0, zl:size() - 1 do W.known[zl:get(i)] = true end
     print("[ZA] safe walk to " .. e.key)
-    ZA.say((warn or "") .. "Walking round the zombies to " .. S.entryName(e) .. ". Square or End stops.")
+    ZA.say((warn or "") .. "Walking round the zombies to " .. S.entryName(e) .. ". {Square} or End stops.")
     return true
 end
 

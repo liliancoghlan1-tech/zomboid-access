@@ -37,7 +37,7 @@ function G.start()
     local extra = ""
     if dz ~= 0 then extra = " It's on another floor: find the stairs first." end
     print("[ZA] guide to " .. e.key)
-    ZA.say("Guiding you to " .. S.entryName(e) .. ", " .. w .. "." .. extra .. " Hold Triangle, or Shift End, to stop.")
+    ZA.say("Guiding you to " .. S.entryName(e) .. ", " .. w .. "." .. extra .. " Hold {Triangle}, or Shift End, to stop.")
 end
 
 function G.toggle()

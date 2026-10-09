@@ -98,7 +98,7 @@ table.insert(S.builders, function(lists)
         name = function()
             local on = LK.isOn()
             return "Lock-on: " .. (on and "on" or "off") .. ". Faces the nearest zombie within reach while you stand still; "
-                .. "you still aim with R2 and swing. Square turns it " .. (on and "off" or "on")
+                .. "you still aim with {R2} and swing. {Square} turns it " .. (on and "off" or "on")
         end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()

@@ -14,15 +14,15 @@ F.screens.SandboxOptionsScreen = {
 }
 F.screens.SandboxOptionsScreenListBox = {
     name = "Sandbox settings, pages",
-    hint = "Up and Down choose a page, Right goes into its settings, Circle leaves the pages for the Start and Back buttons",
+    hint = "Up and Down choose a page, Right goes into its settings, {Circle} leaves the pages for the Start and Back buttons",
 }
 F.screens.SandboxOptionsScreenPanel = {
     name = "Settings",
-    hint = "Up and Down move, Cross changes or opens a setting, Left goes back to the pages",
+    hint = "Up and Down move, {Cross} changes or opens a setting, Left goes back to the pages",
 }
 F.screens.SandboxOptionsScreenPresetPanel = {
     name = "Presets",
-    hint = "Left and Right move between the preset list, Save, Delete and the Advanced switch. Circle goes back",
+    hint = "Left and Right move between the preset list, Save, Delete and the Advanced switch. {Circle} goes back",
 }
 
 for _, k in ipairs({ "SandboxOptionsScreenListBox", "SandboxOptionsScreenPanel", "SandboxOptionsScreenPresetPanel" }) do
@@ -78,10 +78,10 @@ local function valueOf(child)
     local words, value = F.describeBare(c)
     if c.Type == "ISTickBox" then
         local on = c.selected[1] and "on" or "off"
-        return on .. ", tick box, Cross switches it", on
+        return on .. ", tick box, {Cross} switches it", on
     elseif c.Type == "ISTextEntryBox" then
         local v = c:getText() or ""
-        return (v == "" and "empty" or v) .. ", edit box, Cross types a new value", v
+        return (v == "" and "empty" or v) .. ", edit box, {Cross} types a new value", v
     end
     return words, value
 end

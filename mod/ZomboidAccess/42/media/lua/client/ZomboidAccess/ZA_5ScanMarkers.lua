@@ -73,7 +73,7 @@ table.insert(S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
         cat = "you", key = "you|mark", noWhere = true, order = 1000, baseName = "Mark this spot",
-        name = "Mark this spot: Square saves where you're standing as a marker", x = p:getX(), y = p:getY(), z = p:getZ(),
+        name = "Mark this spot: {Square} saves where you're standing as a marker", x = p:getX(), y = p:getY(), z = p:getZ(),
         action = MK.add,
     })
 end)

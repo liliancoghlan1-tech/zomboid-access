@@ -195,7 +195,7 @@ function W.startTravel(p, e, warn)
     end
     local x, y, z = S.entryPos(e)
     print("[ZA] travel to " .. e.key)
-    ZA.say(warn .. "Travelling to " .. S.entryName(e) .. ", " .. S.where(x, y, z) .. ". Square or End stops.")
+    ZA.say(warn .. "Travelling to " .. S.entryName(e) .. ", " .. S.where(x, y, z) .. ". {Square} or End stops.")
 end
 
 -- A leg ended: go on, try another way round, or say we've arrived.
@@ -300,7 +300,7 @@ function W.go()
     W.action, W.entry, W.startedAt, W.try = action, e, getTimestampMs(), try
     watchFail(action)
     print("[ZA] walk to " .. e.key)
-    ZA.say(warn .. "Walking to " .. name .. ". Square or End stops.")
+    ZA.say(warn .. "Walking to " .. name .. ". {Square} or End stops.")
 end
 
 -- Watch the walk: arrived, stopped by the player, or no way through (then try the next way once).

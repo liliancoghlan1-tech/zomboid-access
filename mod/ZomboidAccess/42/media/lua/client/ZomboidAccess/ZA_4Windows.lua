@@ -93,7 +93,7 @@ function F.screenIntro(panel)
         for _, l in ipairs(labelTexts(panel)) do table.insert(parts, l) end
     end
     local hints = F.buttonHints(panel)
-    if hints ~= "" then table.insert(parts, hints) else table.insert(parts, "Circle closes") end
+    if hints ~= "" then table.insert(parts, hints) else table.insert(parts, "{Circle} closes") end
     for i, t in ipairs(parts) do parts[i] = t:gsub("[%.%s]+$", "") end
     return table.concat(parts, ". ")
 end
@@ -154,7 +154,7 @@ local function stoveState(w)
         local n = c:getItems():size()
         table.insert(parts, n == 0 and "Empty" or (n .. (n == 1 and " thing inside" or " things inside")))
     end
-    table.insert(parts, "Cross turns it " .. (o:Activated() and "off" or "on") .. " from anywhere in this window. Left and Right move between the dials")
+    table.insert(parts, "{Cross} turns it " .. (o:Activated() and "off" or "on") .. " from anywhere in this window. Left and Right move between the dials")
     return table.concat(parts, ". ")
 end
 specials.ISOvenUI = stoveState
@@ -243,7 +243,7 @@ specials.ISVehicleMechanics = function(w)
     local s = ""
     pcall(function() w:recalculGeneralCondition() end)
     if w.generalCondition then s = "Overall condition " .. math.floor(w.generalCondition) .. " percent. " end
-    return s .. "Up and Down: the parts. Left: engine and insides. Right: doors, body and lights. Cross: what you can do with a part"
+    return s .. "Up and Down: the parts. Left: engine and insides. Right: doors, body and lights. {Cross}: what you can do with a part"
 end
 
 -- ---------- vehicle seats ----------
@@ -270,5 +270,5 @@ F.readers.ISVehicleSeatUI = function(w)
     return seat, table.concat(parts, ", ") .. ", " .. w.joypadSeat .. " of " .. script:getPassengerCount(), ""
 end
 specials.ISVehicleSeatUI = function(w)
-    return "Choose a seat. Left and Right across the car, Up and Down between rows. Cross sits there, Square gets out by that seat's door. Circle cancels"
+    return "Choose a seat. Left and Right across the car, Up and Down between rows. {Cross} sits there, {Square} gets out by that seat's door. {Circle} cancels"
 end

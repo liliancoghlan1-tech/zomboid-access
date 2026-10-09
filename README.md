@@ -76,7 +76,8 @@ While the scanner is on (the left stick still walks; Cross still opens doors and
 - Square: walk there by itself (Square again stops). Hold Square: use it (see Using things).
 - Circle: scanner off. While the scanner is on, the D-pad doesn't open the game's round menus.
 
-Share is the game's Back button: on an Xbox controller it's View (the small button with two squares), on a Switch Pro controller Minus, on others Select or Back. The PlayStation touchpad isn't used: the game doesn't see it. Button names are spoken the PlayStation way (Cross, Circle, Square, Triangle).
+Share is the game's Back button: on an Xbox controller it's View (the small button with two squares), on a Switch Pro controller Minus, on others Select or Back. The PlayStation touchpad isn't used: the game doesn't see it. Button names follow the game's own setting, Options, Controller tab, Button style: Xbox (A, B, X, Y, LB, RB, LT, RT, View, Menu), PlayStation (Cross, Circle, Square, Triangle, L1, R1, L2, R2, Share, Options) or Steam Deck. This README uses the PlayStation names.
+To swing a weapon the game needs the right trigger almost all the way down (about 96 percent); a lighter pull only aims.
 
 In the inventory: click the right stick (R3) on an item to hear what it is and what it's for.
 

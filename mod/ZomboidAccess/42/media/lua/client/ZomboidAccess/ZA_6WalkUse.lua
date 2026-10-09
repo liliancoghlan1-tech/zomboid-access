@@ -97,7 +97,7 @@ function W.use()
             ZA.MK.remove(e.marker)
         else
             W.removeAsk, W.removeAskAt = e.marker, t
-            ZA.say("Remove " .. e.marker.name .. "? Hold Square again, or press Delete again, to remove it.")
+            ZA.say("Remove " .. e.marker.name .. "? Hold {Square} again, or press Delete again, to remove it.")
         end
         return
     end

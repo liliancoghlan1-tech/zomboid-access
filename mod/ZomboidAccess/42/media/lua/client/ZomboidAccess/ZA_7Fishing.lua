@@ -42,7 +42,7 @@ function FI.tick()
     if st ~= FI.state then
         local was = FI.state
         FI.state = st
-        if st == "Idle" and was ~= "Idle" then ZA.say("Aiming at water. R2 casts.")
+        if st == "Idle" and was ~= "Idle" then ZA.say("Aiming at water. {R2} casts.")
         elseif st == "Wait" and (was == "Cast" or was == "Idle") then
             local d = bob and math.floor(IsoUtils.DistanceTo(getPlayer():getX(), getPlayer():getY(), bob:getX(), bob:getY()) + 0.5)
             ZA.say("Line out" .. (d and (", " .. d .. " metres") or "") .. ". Wait for a bite.")

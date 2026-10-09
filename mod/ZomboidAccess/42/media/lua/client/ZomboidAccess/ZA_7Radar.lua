@@ -77,7 +77,7 @@ table.insert(S.builders, function(lists)
     table.insert(lists.you, {
         cat = "you", key = "you|radar", noWhere = true, order = 902, baseName = "Zombie sounds",
         name = function()
-            return "Zombie sounds: " .. (R.on and "on" or "off") .. ". Square turns them " .. (R.on and "off" or "on")
+            return "Zombie sounds: " .. (R.on and "on" or "off") .. ". {Square} turns them " .. (R.on and "off" or "on")
         end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()

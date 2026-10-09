@@ -29,11 +29,11 @@ end
 -- ---------- finding ways out ----------
 
 local kinds = {
-    door = { name = "Door", how = "go through, then Cross closes it behind you", bonus = -2, walk = "door" },
-    window = { name = "Window", how = "Circle climbs through", bonus = -1, walk = "door" },
-    frame = { name = "Empty window frame", how = "Circle climbs through", bonus = -1, walk = "door" },
-    tallfence = { name = "Tall fence", how = "Circle climbs over", bonus = -1, walk = "adjacent" },
-    fence = { name = "Low fence", how = "Circle hops over; zombies trip on it", bonus = 0, walk = "adjacent" },
+    door = { name = "Door", how = "go through, then {Cross} closes it behind you", bonus = -2, walk = "door" },
+    window = { name = "Window", how = "{Circle} climbs through", bonus = -1, walk = "door" },
+    frame = { name = "Empty window frame", how = "{Circle} climbs through", bonus = -1, walk = "door" },
+    tallfence = { name = "Tall fence", how = "{Circle} climbs over", bonus = -1, walk = "adjacent" },
+    fence = { name = "Low fence", how = "{Circle} hops over; zombies trip on it", bonus = 0, walk = "adjacent" },
     vehicle = { name = "Vehicle", how = "get in", bonus = 2, walk = "vehicle" },
 }
 
@@ -236,7 +236,7 @@ table.insert(S.builders, function(lists)
         name = function()
             local on = ES.isOn()
             return "Escape help: " .. (on and "on" or "off") .. ". While a zombie chases you, two rising whistles play "
-                .. "from the best way out. Square turns it " .. (on and "off" or "on")
+                .. "from the best way out. {Square} turns it " .. (on and "off" or "on")
         end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()
