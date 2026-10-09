@@ -404,6 +404,7 @@ local function allowZombies()
 end
 function TU.spawn(n, dist, spread)
     allowZombies()
+    TU.cameForYou, TU.nextCall, TU.freeSince = nil, nil, nil
     TU.want = { n = n, dist = dist, spread = spread, at = getTimestampMs() }
     local p = getPlayer()
     local px, py, pz = p:getX(), p:getY(), math.floor(p:getZ())
@@ -428,11 +429,25 @@ function TU.spawn(n, dist, spread)
     end
     if not sx then sx, sy = math.floor(px) + 4, math.floor(py) end
     pz = pz or 0
+    local used = {}
     for i = 1, n do
-        local ox = spread and (i - 2) or 0
+        local zx, zy = sx, sy
+        if spread then
+            -- each one on a free square of its own near the spot (side by side was often blocked: only one came)
+            for r = 1, 4 do
+                local found = false
+                for dx = -r, r do for dy = -r, r do
+                    local q = getCell():getGridSquare(sx + dx, sy + dy, pz)
+                    local k = (sx + dx) .. "," .. (sy + dy)
+                    if not found and not used[k] and q and q:isFree(false) then zx, zy, found = sx + dx, sy + dy, true end
+                end end
+                if found then break end
+            end
+            used[zx .. "," .. zy] = true
+        end
         local z
         pcall(function()
-            local list = addZombiesInOutfit(sx + ox, sy, pz, 1, nil, 0)
+            local list = addZombiesInOutfit(zx, zy, pz, 1, nil, 0)
             if list and list:size() > 0 then z = list:get(0) end
         end)
         if z then
@@ -459,20 +474,37 @@ function TU.spawnedDead()
     TU.spawned, TU.want = {}, nil
     return true
 end
--- none of them is after you any more (or they're dead), for 4 seconds
+-- They came for you, and now none of them is after you or within 5 metres (or they're dead), for 4 seconds.
+-- (Just "none chasing" passed at once: fresh zombies haven't noticed you yet.)
 function TU.lostThem()
     if respawnIfNone() then return false end
     local p = getPlayer()
+    local t = getTimestampMs()
     local chasing = false
     for _, z in ipairs(TU.spawned) do
-        if not z:isDead() and z:getTarget() == p then chasing = true end
+        if not z:isDead() then
+            local d = math.sqrt((z:getX() - p:getX()) ^ 2 + (z:getY() - p:getY()) ^ 2)
+            if z:getTarget() == p or d < 6 then TU.cameForYou = true end
+            if z:getTarget() == p or d < 5 then chasing = true end
+        end
     end
-    local t = getTimestampMs()
+    if not TU.cameForYou then
+        -- not noticed you yet: send them again every 8 seconds
+        if t >= (TU.nextCall or 0) then
+            TU.nextCall = t + 8000
+            for _, z in ipairs(TU.spawned) do
+                pcall(function() z:spotted(p, true); z:setTarget(p); z:pathToCharacter(p) end)
+            end
+        end
+        TU.freeSince = nil
+        return false
+    end
     if chasing then TU.freeSince = nil; return false end
     TU.freeSince = TU.freeSince or t
     return t - TU.freeSince > 4000
 end
 function TU.clearSpawned()
+    TU.cameForYou, TU.nextCall, TU.freeSince = nil, nil, nil
     for _, z in ipairs(TU.spawned) do
         pcall(function() if not z:isDead() then z:removeFromWorld(); z:removeFromSquare() end end)
     end
