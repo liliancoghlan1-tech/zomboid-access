@@ -540,7 +540,7 @@ function S.build()
     S.stats.ms = S.builtAt - t0
     local counts = {}
     for _, c in ipairs(S.categories) do table.insert(counts, c.key .. "=" .. #lists[c.key]) end
-    print("[ZA] scan: " .. nsq .. " squares in " .. S.stats.ms .. " ms; " .. table.concat(counts, " ")
+    ZA.log("[ZA] scan: " .. nsq .. " squares in " .. S.stats.ms .. " ms; " .. table.concat(counts, " ")
         .. (S.stats.lastError and (" ERROR " .. S.stats.lastError) or ""))
 end
 
@@ -639,12 +639,12 @@ function S.roomPart(x, y, z)
 end
 
 function S.describe(e, i, n)
-    if e.noWhere then return (entryName(e):gsub("[%.%s]+$", "")) .. (i and (", " .. i .. " of " .. n) or "") end
+    if e.noWhere then return (entryName(e):gsub("[%.%s]+$", "")) .. (i and ZA.pos(i, n) or "") end
     local x, y, z = entryPos(e)
     local w = S.where(x, y, z)
     local room = ""
     if not e.far then pcall(function() room = S.roomPart(x, y, z) end) end
-    return entryName(e) .. ", " .. w .. room .. (i and (", " .. i .. " of " .. n) or "")
+    return entryName(e) .. ", " .. w .. room .. (i and ZA.pos(i, n) or "")
 end
 
 local function speakEntry(i)
@@ -653,7 +653,7 @@ local function speakEntry(i)
     local e = list[i]
     S.sel[c.key] = e.key
     local text = S.describe(e, i, #list)
-    print("[ZA] scan say: " .. e.key)
+    ZA.log("[ZA] scan say: " .. e.key)
     ZA.say(text)
 end
 
@@ -703,7 +703,7 @@ function S.switchCategory(delta)
     S.sel[c.key] = list[1].key
     local e = list[1]
     local text = c.name .. ", " .. #list .. ". " .. S.describe(e, 1, #list)
-    print("[ZA] scan say: " .. e.key)
+    ZA.log("[ZA] scan say: " .. e.key)
     ZA.say(text)
 end
 
@@ -744,7 +744,7 @@ function S.dump()
     for _, c in ipairs(S.categories) do
         for i, e in ipairs(S.lists[c.key]) do
             local x, y, z = entryPos(e)
-            print(string.format("[ZA] dump %s %d %s | %s | %.1f,%.1f,%d", c.key, i, e.key, S.describe(e), x, y, z))
+            ZA.log(string.format("[ZA] dump %s %d %s | %s | %.1f,%.1f,%d", c.key, i, e.key, S.describe(e), x, y, z))
         end
     end
     return "dumped"

@@ -12,6 +12,10 @@
 
 ZA.CR = ZA.CR or {}
 local CR = ZA.CR
+-- The scanner (ZA_5Scan) loads after this file: make its table now, as ZA_4Health does, or adding Craft and Build to
+-- the You list fails at start ("attempted index: builders of non-table").
+ZA.S = ZA.S or {}
+ZA.S.builders = ZA.S.builders or {}
 local S = ZA.S
 
 -- ---------- menus ----------
@@ -193,7 +197,7 @@ function CR.recipeMenu(kind, recipe)
     local name = recipe:getTranslationName()
     if ok then
         if kind == "build" then
-            menu:addOption("Place it: " .. name .. ". A square appears; the D-pad moves it, Cross builds", kind, function() CR.make(kind, recipe) end)
+            menu:addOption(ZA.buttons("Place it: " .. name .. ". A square appears; the D-pad moves it, {Cross} builds"), kind, function() CR.make(kind, recipe) end)
         else
             menu:addOption("Make it: " .. name, kind, function() CR.make(kind, recipe, 1) end)
             local count = 1
@@ -293,7 +297,7 @@ end
 -- "Craft" and "Build" in the You list
 table.insert(S.builders, function(lists)
     local p = getPlayer()
-    for i, k in ipairs({ { "craft", "Craft: make things from what you have. Square" }, { "build", "Build: walls, furniture, fences and more. Square" } }) do
+    for i, k in ipairs({ { "craft", "Craft: make things from what you have. {Square}" }, { "build", "Build: walls, furniture, fences and more. {Square}" } }) do
         table.insert(lists.you, {
             cat = "you", key = "you|" .. k[1], noWhere = true, order = 905 + i, baseName = k[1],
             name = k[2], x = p:getX(), y = p:getY(), z = p:getZ(),

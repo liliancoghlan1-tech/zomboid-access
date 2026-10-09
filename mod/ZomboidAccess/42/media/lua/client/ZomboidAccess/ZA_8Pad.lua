@@ -28,7 +28,7 @@ end
 function P.setLayer(on)
     P.layer = on
     if on then
-        ZA.say("Scanner on. D-pad up and down: things. Left and right: categories. Triangle: again, hold for guide. Square: walk there, hold to use it. Circle: scanner off.")
+        ZA.say("Scanner on. D-pad up and down: things. Left and right: categories. {Triangle}: again, hold for guide. {Square}: walk there, hold to use it. {Circle}: scanner off.")
     else
         ZA.say("Scanner off.")
     end

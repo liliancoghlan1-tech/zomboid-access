@@ -1,9 +1,9 @@
 Zomboid Access
 ==============
 
-Play Project Zomboid with the NVDA screen reader: menus, character creation, a scanner for everything around you, walking by itself (round zombies when they're near), zombie warnings and escape help, health and moodles, fighting with optional lock-on, inventory and looting, cooking, farming, foraging, fishing, crafting and building, driving with a steering tone or autodrive, and an interactive tutorial with a guide on the radio.
+Play Project Zomboid with a screen reader (NVDA, JAWS and others): menus, character creation, a scanner for everything around you, walking by itself (round zombies when they're near), zombie warnings and escape help, health and moodles, fighting with optional lock-on, inventory and looting, cooking, farming, foraging, fishing, crafting and building, driving with a steering tone or autodrive, and an interactive tutorial with a guide on the radio.
 
-This is an EARLY VERSION (0.9.0). It has been played through character creation, the tutorial, looting houses, fighting and dying many times, but not long-term survival. Please send what doesn't work (see Feedback at the end).
+This is an EARLY VERSION (0.9.3). It has been played through character creation, the tutorial, looting houses, fighting and dying many times, but not long-term survival. Please send what doesn't work (see Feedback at the end).
 
 New here? Start with the tutorial: New game, Challenges, "Zomboid Access Tutorial" (see Tutorial below).
 
@@ -13,24 +13,33 @@ Made by Lilian Coghlan. MIT licence. Street names and lines come from the game's
 What you need
 -------------
 - Project Zomboid, Build 42 (made and tested on 42.21), on Windows.
-- NVDA 2024.1 or later.
+- A screen reader: NVDA, JAWS, ZDSR and others work. With none running, it speaks with the Windows voices.
+- Steam (the installer sets the game's Steam launch option; see Installing).
 - The game set to English (the mod's own words are English; the game's words follow the game's language).
 - A controller (tested with a PlayStation 5 controller; any controller works, see Controller). The menus and character creation are read only through a controller. In the world, the keyboard keys below work too.
 
 
-Installing
-----------
+Installing, updating and removing
+---------------------------------
 1. Start Project Zomboid once, wait about a minute, then close it with Alt+F4. (The game clears its mod list the first time it starts.)
    The very first time, the game stops on a Terms of Service screen before the main menu. Nothing reads it until the mod is installed, so just close the game there with Alt+F4.
-2. Unzip this folder anywhere and run Install.bat. It:
+2. Exit Steam (Steam menu, Exit). Unzip this folder anywhere and run ZomboidAccessSetup.exe. It opens on a Status box that says what you have and what the newest version is, with that version's release notes in the box after it, then the buttons Install (or Update), Reinstall, Uninstall and Close. Install:
+   - checks GitHub for the newest version (if it can't, it installs the copy in this folder),
    - copies the mod into your Zomboid\mods folder and turns it on (other mods you use stay on),
-   - opens the NVDA add-on: choose Yes, then let NVDA restart.
+   - copies the speech bridge to %LOCALAPPDATA%\ZomboidAccess, and sets Project Zomboid's launch option in Steam so the bridge starts with the game and closes with it (any launch options you had, like -debug, are kept after it),
+   - keeps a copy of itself there, with a Start menu entry, "Zomboid Access Setup", for updates,
+   - says which screen reader it will speak through, as a test.
+   It finds the game in any of your Steam libraries, on any drive; the mod itself goes in your Zomboid folder (or the one your -cachedir= launch option names).
+   If Steam was running, it tells you to exit Steam and run it again, or how to type the launch option yourself.
+   Upgrading from 0.9.2 or earlier: remove the old NVDA add-on (NVDA menu, Tools, Add-on store, Installed add-ons, Zomboid Access, Remove), or everything is said twice. Setup reminds you.
 3. Start Project Zomboid. If the Terms of Service screen comes up, it is read out: Up and Down move between its buttons, Enter presses one (it starts on Accept). With a controller, press Cross first, then the D-pad and Cross.
    Then the main menu says "Press Cross on your controller to start": press Cross and it reads the menu. If it says "No controller found", connect one and press Cross.
 
-To remove it: run Uninstall.bat, then remove the add-on in NVDA (NVDA menu, Tools, Add-on store, Installed add-ons, Zomboid Access, Remove).
+Updating: run "Zomboid Access Setup" from the Start menu. When there is a newer version it says so, shows its release notes, and asks: Update replaces only the files that changed and removes ones the new version no longer has. Your voice settings, your other options and your saves are kept.
+Reinstall copies every file again, if something seems broken. Uninstall removes the mod, the speech bridge (with its voice settings) and its launch option; your saves are kept.
 
-The game mod writes what to say into a file (Zomboid\Lua\ZomboidAccess_speech.txt), and the NVDA add-on reads it out. Both are needed. The add-on reads only that file and the game's log; it doesn't use the network.
+The game mod writes what to say into a file (Zomboid\Lua\ZomboidAccess_speech.txt), and the speech bridge reads it out through your screen reader, using Prism (https://github.com/ethindp/prism). Both are needed. The file stays small (it starts again past 256 KB) and the bridge deletes it when the game closes. The bridge reads only that file and the game's log; it doesn't use the network. While the game starts, while a world loads, and on the "press to start" screen, the game runs no mod code at all, so the bridge watches the game's log and says what's happening itself.
+Not using Steam? Run the bridge with the game after it, for example: "%LOCALAPPDATA%\ZomboidAccess\ZomboidAccessBridge.exe" "C:\Games\ProjectZomboid\ProjectZomboid64.exe". It starts the game and closes with it.
 
 
 Tutorial
@@ -49,7 +58,10 @@ Every screen says its name, how to move around it, and what each button does. Ea
 
 - The main menu starts on Solo. Continue and Load are above it (press up).
 - Occupation and traits: L1 and R1 switch between occupations, good traits, bad traits and your traits.
-- Loading takes a minute or two. When it's done NVDA says "The world has loaded": press Cross (or click) to begin.
+- Starting the game says "Starting Project Zomboid", and "Still starting" every 20 seconds until the main menu speaks.
+- Loading a world takes a minute or two: "Still loading the world" every 20 seconds. When it's done you hear "The world has loaded": press Cross (or click) to begin. Until you do, it reminds you every 20 seconds.
+- Quitting a game says "Leaving the world and saving" (and "Still saving") until the main menu speaks.
+- The game's own Tutorial on the main menu turns all mods off, so it would be silent: choosing it starts the Zomboid Access Tutorial instead.
 - After dying, the screens for a new character read the same way.
 
 
@@ -68,7 +80,8 @@ While the scanner is on (the left stick still walks; Cross still opens doors and
 - Square: walk there by itself (Square again stops). Hold Square: use it (see Using things).
 - Circle: scanner off. While the scanner is on, the D-pad doesn't open the game's round menus.
 
-Share is the game's Back button: on an Xbox controller it's View (the small button with two squares), on a Switch Pro controller Minus, on others Select or Back. The PlayStation touchpad isn't used: the game doesn't see it. Button names are spoken the PlayStation way (Cross, Circle, Square, Triangle).
+Share is the game's Back button: on an Xbox controller it's View (the small button with two squares), on a Switch Pro controller Minus, on others Select or Back. The PlayStation touchpad isn't used: the game doesn't see it. Button names follow the game's own setting, Options, Controller tab, Button style: Xbox (A, B, X, Y, LB, RB, LT, RT, View, Menu), PlayStation (Cross, Circle, Square, Triangle, L1, R1, L2, R2, Share, Options) or Steam Deck. This README uses the PlayStation names.
+To swing a weapon the game needs the right trigger almost all the way down (about 96 percent); a lighter pull only aims.
 
 In the inventory: click the right stick (R3) on an item to hear what it is and what it's for.
 
@@ -154,8 +167,19 @@ The mod's own sounds, which only you hear (zombies don't):
 - Two quick rising whistles from the best way out while something chases you (Escape help).
 - Driving: a low blip means steer left, a high blip steer right; faster the more you need to turn.
 - Fishing: two little water plips when a fish bites.
-- The tutorial: a short radio crackle before the guide speaks. The guide waits until other speech is finished, and other speech waits for the guide, so nothing cuts it off (except a zombie warning outside the tutorial).
+- The tutorial: a short radio crackle before the guide speaks. If the radio has a voice of its own (see Voices), it talks alongside everything else. If it shares your screen reader's voice, the guide waits until other speech is finished, and other speech waits for the guide, so nothing cuts it off (except a zombie warning outside the tutorial).
 Switch the zombie sounds off or on in the You list (Zombie sounds, then Square); Escape help and Driving help have their own switches there.
+
+
+Voices
+------
+Options, Accessibility tab, at the end under "Zomboid Access":
+- Say positions in lists, like 2 of 25: on at first. Turned off, menus, lists, tabs and the scanner leave out the "2 of 25". It is kept in Zomboid\Lua\ZomboidAccess_options.txt.
+- Zomboid Access voice: everything the mod says. Radio voice: the guide on the radio in the tutorial.
+- Each one is your screen reader (the default), or any SAPI or OneCore voice on your computer. Each SAPI or OneCore voice has its own speed and volume (0 to 100); the screen reader keeps its own settings.
+- A change is heard at once: the Zomboid Access voice says the new setting in the new voice, and the radio says a sample.
+- Giving the radio a voice of its own lets it talk while you move around menus and the scanner, without anything waiting for it.
+The choices are kept by the speech bridge (voices.json next to it), so they also cover what is said while the game starts and loads.
 
 
 Fighting
@@ -189,7 +213,7 @@ To walk there round the zombies: the scanner's Ways out category, then Square. T
 
 Lock-on
 -------
-Off until you switch it on (the You list, Lock-on, then Square; the choice is kept in your save). While it's on, your character turns to face the nearest zombie within about 3.5 metres (one that's chasing you first) and stays on it until it dies or gets away: "Locked on: Zombie, 2 metres right". It doesn't turn you while you walk, and pushing the right stick to aim somewhere else wins over it. The fighting stays yours: pull R2 halfway to aim, all the way to swing; L2 shoves.
+Off until you switch it on (the You list, Lock-on, then Square; the choice is kept in your save). While it's on, your character turns to face the nearest zombie within about 3.5 metres (one that's chasing you first) and stays on it until it dies or gets away: "Locked on: Zombie, 2 metres right". It doesn't turn you while you walk, and pushing the right stick to aim somewhere else wins over it. While it faces a zombie and you stand still, it also aims at it for you, so pulling R2 all the way swings straight away; L2 shoves. That also makes it work with controllers whose triggers are only on or off (8BitDo and others), which can't be pulled halfway to aim. Walking, or aiming elsewhere with the right stick, lets go at once.
 
 
 Choosing a square (digging, sowing, building)

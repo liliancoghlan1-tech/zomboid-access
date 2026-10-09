@@ -23,7 +23,7 @@ function MK.add()
     local m = { name = name, x = math.floor(p:getX()) + 0.5, y = math.floor(p:getY()) + 0.5, z = math.floor(p:getZ()) }
     table.insert(list, m)
     S.builtAt = -1e9
-    print("[ZA] marker added " .. name)
+    ZA.log("[ZA] marker added " .. name)
     ZA.say("Marked this spot as " .. name .. ". Type a new name and press Enter, or Escape to keep it.")
     MK.rename(m)
 end
@@ -73,7 +73,7 @@ table.insert(S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
         cat = "you", key = "you|mark", noWhere = true, order = 1000, baseName = "Mark this spot",
-        name = "Mark this spot: Square saves where you're standing as a marker", x = p:getX(), y = p:getY(), z = p:getZ(),
+        name = "Mark this spot: {Square} saves where you're standing as a marker", x = p:getX(), y = p:getY(), z = p:getZ(),
         action = MK.add,
     })
 end)

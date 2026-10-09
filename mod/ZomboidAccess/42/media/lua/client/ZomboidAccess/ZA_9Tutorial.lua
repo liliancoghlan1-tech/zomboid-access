@@ -65,6 +65,36 @@ if not TU.registered then
     Events.OnChallengeQuery.Add(C.Add)
 end
 
+-- The game's own TUTORIAL (main menu, or the first-launch "play the tutorial?" box) clears the mod list and
+-- reloads Lua without mods (MainScreen.startTutorial), so this mod would go silent for the whole tutorial.
+-- Every way into it calls MainScreen.startTutorial, so start ours instead, the way NewGameScreen:clickPlay
+-- starts a challenge.
+function TU.startFromMainMenu()
+    local ms = MainScreen and MainScreen.instance
+    if not ms or not ms.soloScreen then return false end
+    -- protected: the character screen opens at once, and its first words would cut this off
+    ZA.protected("The game's own tutorial turns all mods off, so Zomboid Access would go silent. "
+        .. "Starting the Zomboid Access Tutorial instead.")
+    ActiveMods.getById("currentGame"):copyFrom(ActiveMods.getById("default"))
+    local ng = ms.soloScreen
+    ng:setVisible(true, JoypadState.getMainMenuJoypad())
+    C.name = C.name or "Zomboid Access Tutorial"
+    ng.selectedItem = { data = { mode = C.name, challenge = C } }
+    ng:clickPlay()
+    return true
+end
+
+if MainScreen and MainScreen.startTutorial and not TU.wrappedStart then
+    TU.wrappedStart = true
+    local orig = MainScreen.startTutorial
+    MainScreen.startTutorial = function(...)
+        local ok, started = pcall(TU.startFromMainMenu)
+        if ok and started then return end
+        if not ok then print("[ZA] tutorial redirect failed: " .. tostring(started)) end
+        return orig(...)
+    end
+end
+
 -- ---------- state ----------
 
 local function state()
@@ -259,7 +289,13 @@ TU.steps = {
           return m ~= nil and m.isSearchMode == true
       end },
     { line = "forageFind", check = function()
-          ZA.S.build()
+          -- a whole scan takes about 90 ms: checks run every tick, so look again only every 2 seconds
+          -- (rebuilding each tick slowed the game to a crawl while this lesson waited)
+          local t = getTimestampMs()
+          if t >= (TU.nextFindScan or 0) then
+              TU.nextFindScan = t + 2000
+              ZA.S.build()
+          end
           return #(ZA.S.lists.finds or {}) > 0
       end },
     { line = "foragePick", setup = function() TU.pickFrom = ZA.FG and ZA.FG.picked or 0 end,
@@ -368,6 +404,7 @@ local function allowZombies()
 end
 function TU.spawn(n, dist, spread)
     allowZombies()
+    TU.cameForYou, TU.nextCall, TU.freeSince = nil, nil, nil
     TU.want = { n = n, dist = dist, spread = spread, at = getTimestampMs() }
     local p = getPlayer()
     local px, py, pz = p:getX(), p:getY(), math.floor(p:getZ())
@@ -392,11 +429,25 @@ function TU.spawn(n, dist, spread)
     end
     if not sx then sx, sy = math.floor(px) + 4, math.floor(py) end
     pz = pz or 0
+    local used = {}
     for i = 1, n do
-        local ox = spread and (i - 2) or 0
+        local zx, zy = sx, sy
+        if spread then
+            -- each one on a free square of its own near the spot (side by side was often blocked: only one came)
+            for r = 1, 4 do
+                local found = false
+                for dx = -r, r do for dy = -r, r do
+                    local q = getCell():getGridSquare(sx + dx, sy + dy, pz)
+                    local k = (sx + dx) .. "," .. (sy + dy)
+                    if not found and not used[k] and q and q:isFree(false) then zx, zy, found = sx + dx, sy + dy, true end
+                end end
+                if found then break end
+            end
+            used[zx .. "," .. zy] = true
+        end
         local z
         pcall(function()
-            local list = addZombiesInOutfit(sx + ox, sy, pz, 1, nil, 0)
+            local list = addZombiesInOutfit(zx, zy, pz, 1, nil, 0)
             if list and list:size() > 0 then z = list:get(0) end
         end)
         if z then
@@ -423,20 +474,37 @@ function TU.spawnedDead()
     TU.spawned, TU.want = {}, nil
     return true
 end
--- none of them is after you any more (or they're dead), for 4 seconds
+-- They came for you, and now none of them is after you or within 5 metres (or they're dead), for 4 seconds.
+-- (Just "none chasing" passed at once: fresh zombies haven't noticed you yet.)
 function TU.lostThem()
     if respawnIfNone() then return false end
     local p = getPlayer()
+    local t = getTimestampMs()
     local chasing = false
     for _, z in ipairs(TU.spawned) do
-        if not z:isDead() and z:getTarget() == p then chasing = true end
+        if not z:isDead() then
+            local d = math.sqrt((z:getX() - p:getX()) ^ 2 + (z:getY() - p:getY()) ^ 2)
+            if z:getTarget() == p or d < 6 then TU.cameForYou = true end
+            if z:getTarget() == p or d < 5 then chasing = true end
+        end
     end
-    local t = getTimestampMs()
+    if not TU.cameForYou then
+        -- not noticed you yet: send them again every 8 seconds
+        if t >= (TU.nextCall or 0) then
+            TU.nextCall = t + 8000
+            for _, z in ipairs(TU.spawned) do
+                pcall(function() z:spotted(p, true); z:setTarget(p); z:pathToCharacter(p) end)
+            end
+        end
+        TU.freeSince = nil
+        return false
+    end
     if chasing then TU.freeSince = nil; return false end
     TU.freeSince = TU.freeSince or t
     return t - TU.freeSince > 4000
 end
 function TU.clearSpawned()
+    TU.cameForYou, TU.nextCall, TU.freeSince = nil, nil, nil
     for _, z in ipairs(TU.spawned) do
         pcall(function() if not z:isDead() then z:removeFromWorld(); z:removeFromSquare() end end)
     end
@@ -507,7 +575,7 @@ function TU.placeCar()
     giveKey(v)
     TU.car = v
     st.car = { x = best[1], y = best[2] }
-    print("[ZA] tutorial car at " .. best[1] .. "," .. best[2])
+    ZA.log("[ZA] tutorial car at " .. best[1] .. "," .. best[2])
 end
 
 -- a marker about 50 squares along the road from where you are (within what the game has loaded)
@@ -559,6 +627,39 @@ end
 
 -- ---------- running them ----------
 
+-- A loaded save keeps the lesson's zombies, but not our list of them, so the lesson would spawn more on top: three
+-- of them can drag you down, which kills whatever your health (healing can't stop it). This world has no zombies
+-- of its own, so any left here are old lesson zombies: clear them before the lesson starts again.
+function TU.clearLeftovers()
+    local zl, gone = getCell():getZombieList(), {}
+    for i = 0, zl:size() - 1 do
+        local z = zl:get(i)
+        if z and not z:isDead() then table.insert(gone, z) end
+    end
+    for _, z in ipairs(gone) do pcall(function() z:removeFromWorld(); z:removeFromSquare() end) end
+    if #gone > 0 then ZA.log("[ZA] tutorial: cleared " .. #gone .. " zombies left from before") end
+    TU.spawned, TU.want = {}, nil
+end
+
+-- The fighting lessons after "weapon" need the bat in your hands: after a reload, or a new character after dying,
+-- they can be empty. Put it back (from your bags, or a new one).
+TU.armedSteps = { closeInv = true, zombieComing = true, lockOnSwitch = true, lockOnFight = true, escape = true }
+function TU.ensureWeapon()
+    local p = getPlayer()
+    if not p or p:getPrimaryHandItem() then return end
+    local inv = p:getInventory()
+    local bat = inv:getFirstTypeRecurse("Base.BaseballBat")
+    if bat and bat:getContainer() ~= inv then
+        bat:getContainer():Remove(bat)
+        inv:AddItem(bat)
+    end
+    bat = bat or inv:AddItem("Base.BaseballBat")
+    if not bat then return end
+    p:setPrimaryHandItem(bat)
+    if bat:isTwoHandWeapon() then p:setSecondaryHandItem(bat) end
+    ZA.queue("The bat is back in your hands.")
+end
+
 function TU.enter(i)
     local st = state()
     st.step = i
@@ -566,12 +667,16 @@ function TU.enter(i)
     TU.stepAt, TU.hinted, TU.doneAt = getTimestampMs(), nil, nil
     local s = TU.steps[i]
     if not s then return end
+    if TU.armedSteps[s.line] then
+        local ok, err = pcall(TU.ensureWeapon)
+        if not ok then print("[ZA] tutorial weapon error: " .. tostring(err)) end
+    end
     if s.setup then
         local ok, err = pcall(s.setup)
         if not ok then print("[ZA] tutorial setup error, step " .. i .. ": " .. tostring(err)) end
     end
     TU.radio(L(s.line).say)
-    print("[ZA] tutorial step " .. i .. " " .. s.line)
+    ZA.log("[ZA] tutorial step " .. i .. " " .. s.line)
 end
 
 function TU.tick()
@@ -617,6 +722,7 @@ function TU.tick()
         if st.stepKey then
             for i, s2 in ipairs(TU.steps) do if s2.line == st.stepKey then st.step = i; break end end
         end
+        pcall(TU.clearLeftovers)
         TU.enter(st.step)
         return
     end
@@ -660,7 +766,7 @@ table.insert(S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
         cat = "you", key = "you|radio", noWhere = true, order = 0, baseName = "Radio",
-        name = function() return "Radio: say that again. Square" end,
+        name = function() return "Radio: say that again. {Square}" end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()
             local st = state()
@@ -725,8 +831,15 @@ table.insert(S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
         cat = "you", key = "you|lessons", noWhere = true, order = 0.5, baseName = "Lessons",
-        name = function() return "Radio: choose a lesson. Square" end,
+        name = function() return "Radio: choose a lesson. {Square}" end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function() TU.chooseLesson() end,
     })
 end)
+
+-- A new character after dying here carries on with the lesson you were in: start it again as a loaded save does
+-- (old zombies cleared, the bat back in your hands for the fighting lessons).
+if not TU.newPlayerHooked then
+    TU.newPlayerHooked = true
+    Events.OnCreatePlayer.Add(function() TU.stepAt = nil end)
+end

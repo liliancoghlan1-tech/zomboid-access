@@ -18,7 +18,7 @@ if not inserted then
     for i, c in ipairs(S.categories) do
         if c.key == "loot_other" then
             table.insert(S.categories, i + 1, { key = "finds", name = "Finds",
-                none = "nothing found. Hold Share and choose Enable search mode, then walk slowly" })
+                none = "nothing found. Hold {Share} and choose Enable search mode, then walk slowly" })
             break
         end
     end

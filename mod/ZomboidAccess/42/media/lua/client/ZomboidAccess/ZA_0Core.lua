@@ -1,5 +1,5 @@
 -- Zomboid Access: core.
--- Speech: every line goes to Zomboid/Lua/ZomboidAccess_speech.txt, which our NVDA add-on reads aloud.
+-- Speech: every line goes to Zomboid/Lua/ZomboidAccess_speech.txt, which our speech bridge reads aloud.
 --   "S<tab>text" = say now (interrupts), "Q<tab>text" = say after what is already speaking,
 --   "G<tab>text" = the tutorial guide (protected), "U<tab>text" = urgent (see ZA.say below).
 -- Every line is also printed to console.txt with a [ZA] tag, so a test can read what was said.
@@ -15,23 +15,88 @@ function ZA.mod(a, n)
     if r < 0 then r = r + n end
     return r
 end
-ZA.version = "0.9.2"
+ZA.version = "0.9.3"
 ZA.speechFile = "ZomboidAccess_speech.txt"
 ZA.cmdFile = "ZomboidAccess_cmd.txt"
 
+-- Developer mode: on only when Zomboid/Lua/ZomboidAccess_dev.txt exists (checked once at start). Players never
+-- have that file. It turns on the test channel below and the mod's log lines (ZA.log): everything said, the
+-- scanner's work, walking... in console.txt, for test tools. Errors are always logged (print).
+do
+    local r = getFileReader("ZomboidAccess_dev.txt", false)
+    ZA.dev = r ~= nil
+    if r then r:close() end
+end
+function ZA.log(text)
+    if ZA.dev then print(text) end
+end
+
+-- ---------- settings ----------
+-- The mod's own choices (Options, Accessibility, Zomboid Access), one "name=value" a line in
+-- Zomboid/Lua/ZomboidAccess_options.txt. Voices are kept by the speech bridge instead.
+
+ZA.optionsFile = "ZomboidAccess_options.txt"
+ZA.settings = { positions = true }
+do
+    local r = getFileReader(ZA.optionsFile, false)
+    if r then
+        local line = r:readLine()
+        while line do
+            local k, v = line:match("^([%w_]+)=(.*)$")
+            if k then
+                -- not "v == 'false' and false or v": that gives the string back, never false
+                if v == "true" then v = true elseif v == "false" then v = false end
+                ZA.settings[k] = v
+            end
+            line = r:readLine()
+        end
+        r:close()
+    end
+end
+function ZA.setSetting(name, value)
+    ZA.settings[name] = value
+    local w = getFileWriter(ZA.optionsFile, true, false)
+    if w then
+        for k, v in pairs(ZA.settings) do w:write(k .. "=" .. tostring(v) .. "\n") end
+        w:close()
+    end
+end
+
+-- A place in a list, ", 2 of 25", unless the player turned positions off.
+function ZA.pos(i, n)
+    if ZA.settings.positions == false then return "" end
+    return ", " .. tostring(i) .. " of " .. tostring(n)
+end
+
 -- ---------- text ----------
 
--- Controller buttons drawn as pictures in game text (<JOYPAD:AButton,28,28>, .../PS4_A.png),
--- named the PlayStation way.
+-- Button names. The mod's own words write a button as {Cross}, {R2}, {Share}... (the PlayStation names), and they
+-- are said the way the game's own Controller option "Button style" labels them: Xbox, PlayStation or Steam Deck.
+-- Only these marks change, never the game's own text ("Square Table", "Wooden Cross").
+ZA.buttonNames = {
+    [1] = { Cross = "A", Circle = "B", Square = "X", Triangle = "Y", L1 = "LB", R1 = "RB", L2 = "LT", R2 = "RT",
+        L3 = "the left stick click", R3 = "the right stick click", Share = "View", Options = "Menu" },
+    [3] = { Cross = "A", Circle = "B", Square = "X", Triangle = "Y", Share = "View", Options = "Menu" },
+}
+function ZA.buttonStyle()
+    local ok, style = pcall(function() return getCore():getOptionControllerButtonStyle() end)
+    return ok and style or 2
+end
+function ZA.buttons(text)
+    local names = ZA.buttonNames[ZA.buttonStyle()] or {}
+    return (text:gsub("{(%w+)}", function(b) return names[b] or b end))
+end
+
+-- Controller buttons drawn as pictures in game text (<JOYPAD:AButton,28,28>, .../PS4_A.png).
 ZA.padWords = {
-    AButton = "Cross", BButton = "Circle", XButton = "Square", YButton = "Triangle",
-    A = "Cross", B = "Circle", X = "Square", Y = "Triangle",
-    LBumper = "L1", RBumper = "R1", LB = "L1", RB = "R1",
-    LTrigger = "L2", RTrigger = "R2", LT = "L2", RT = "R2",
+    AButton = "{Cross}", BButton = "{Circle}", XButton = "{Square}", YButton = "{Triangle}",
+    A = "{Cross}", B = "{Circle}", X = "{Square}", Y = "{Triangle}",
+    LBumper = "{L1}", RBumper = "{R1}", LB = "{L1}", RB = "{R1}",
+    LTrigger = "{L2}", RTrigger = "{R2}", LT = "{L2}", RT = "{R2}",
     LStick = "the left stick", RStick = "the right stick",
-    LStickButton = "L3", RStickButton = "R3",
+    LStickButton = "{L3}", RStickButton = "{R3}",
     DPadUp = "D-pad up", DPadDown = "D-pad down", DPadLeft = "D-pad left", DPadRight = "D-pad right",
-    DPad = "the D-pad", Back = "Share", Start = "Options", Select = "Share",
+    DPad = "the D-pad", Back = "{Share}", Start = "{Options}", Select = "{Share}",
 }
 
 function ZA.clean(text)
@@ -44,24 +109,47 @@ function ZA.clean(text)
     text = text:gsub("[\r\n\t]+", " ")
     text = text:gsub("%s%s+", " ")
     text = text:gsub("^%s+", ""):gsub("%s+$", "")
-    return text
+    return ZA.buttons(text)
 end
 
 -- ---------- speech ----------
 
 local lastText, lastTime = nil, 0
 
-local function write(kind, text)
-    local w = getFileWriter(ZA.speechFile, true, true)
+-- The file only grows while the game runs, so past this size it starts again. Only after a quiet half second:
+-- the bridge reads every 40 ms, so by then it has every line, and none is lost to the restart.
+local SPEECH_FILE_MAX = 256 * 1024
+function ZA.speechFileStart() return "#" .. tostring(getTimestampMs()) .. "\n" end
+local written, lastWrite = 0, 0
+
+local function writeLine(line)
+    local now = getTimestampMs()
+    local fresh = written > SPEECH_FILE_MAX and now - lastWrite > 500
+    local w = getFileWriter(ZA.speechFile, true, not fresh)
     if w then
-        w:write(kind .. "\t" .. text .. "\n")
+        if fresh then w:write(ZA.speechFileStart()) end
+        w:write(line)
         w:close()
+        written = (fresh and 0 or written) + #line
+        lastWrite = now
     end
-    print("[ZA] " .. (kind == "S" and "" or kind .. " ") .. text)
 end
 
--- kind: "S" say now (interrupts), "Q" after what is speaking, "G" the tutorial guide (waits for what is
--- speaking, and nothing but "U" cuts it off), "U" urgent: danger and combat, always at once.
+local function write(kind, text)
+    writeLine(kind .. "\t" .. text .. "\n")
+    ZA.log("[ZA] " .. (kind == "S" and "" or kind .. " ") .. text)
+end
+
+-- A command for the bridge rather than words to say, e.g. ZA.bridge("V", "radio", "SAPI", "Brian", 50, 100).
+function ZA.bridge(...)
+    local fields = {}
+    for i, v in ipairs({ ... }) do fields[i] = tostring(v):gsub("[\t\r\n]", " ") end
+    writeLine(table.concat(fields, "\t") .. "\n")
+end
+
+-- kind: "S" say now (interrupts), "Q" after what is speaking, "P" say now and don't let the next lines cut it
+-- off, "G" the tutorial guide on the radio (its own voice, or protected like "P" when it shares the everyday
+-- voice), "U" urgent: danger and combat, always at once.
 local function speak(text, kind)
     text = ZA.clean(text)
     if text == "" then return end
@@ -76,6 +164,7 @@ end
 function ZA.say(text, queue) speak(text, queue and "Q" or "S") end
 function ZA.queue(text) speak(text, "Q") end
 function ZA.guide(text) speak(text, "G") end
+function ZA.protected(text) speak(text, "P") end
 -- In the tutorial nothing can really hurt you, so there the guide's words win: urgent is plain "S" there.
 function ZA.urgent(text)
     local tutorial = false
@@ -87,10 +176,12 @@ function ZA.repeatLast()
     if ZA.last then lastText = nil; ZA.say(ZA.last) end
 end
 
--- Start each session with an empty speech file, so the add-on never replays old lines.
+-- Start each session with a fresh speech file, so the bridge never replays old lines.
+-- Every fresh file begins with "#<time>": the bridge knows a new file by its first line changing, even when the
+-- new one is already as long as what it had read of the old one.
 do
     local w = getFileWriter(ZA.speechFile, true, false)
-    if w then w:write(""); w:close() end
+    if w then w:write(ZA.speechFileStart()); w:close() end
 end
 
 -- ---------- ticks ----------
@@ -103,7 +194,7 @@ ZA.seenEvents = {}
 local function tick(source)
     if not ZA.seenEvents[source] then
         ZA.seenEvents[source] = true
-        print("[ZA] event fires: " .. source)
+        ZA.log("[ZA] event fires: " .. source)
     end
     local now = getTimestampMs()
     if now == lastFrame then return end
@@ -125,12 +216,7 @@ end
 
 -- ---------- test channel ----------
 
--- Off unless the developer file exists (checked once at start).
-do
-    local r = getFileReader("ZomboidAccess_dev.txt", false)
-    ZA.dev = r ~= nil
-    if r then r:close() end
-end
+-- (ZA.dev: see the top of this file.)
 local cmdNext, cmdDone = 0, 0
 -- The file is only appended to by the test tools; the mod remembers how many lines it has run.
 -- (Rewriting the file to remove a line lost lines the tools appended at the same moment.)
@@ -157,16 +243,16 @@ ZA.onTick(function()
     cmdDone = cmdDone + 1
     local cmd = lines[cmdDone]
     if cmd == nil or cmd == "" then return end
-    print("[ZA] cmd: " .. cmd)
+    ZA.log("[ZA] cmd: " .. cmd)
     local f, err = loadstring(cmd)
     if not f then print("[ZA] cmd compile error: " .. tostring(err)); return end
     local ok, res = pcall(f)
     if not ok then print("[ZA] cmd error: " .. tostring(res))
-    elseif res ~= nil then print("[ZA] cmd result: " .. tostring(res)) end
+    elseif res ~= nil then ZA.log("[ZA] cmd result: " .. tostring(res)) end
 end)
 
-Events.OnGameBoot.Add(function() print("[ZA] Zomboid Access " .. ZA.version .. " loaded") end)
-Events.OnMainMenuEnter.Add(function() print("[ZA] main menu entered") end)
+Events.OnGameBoot.Add(function() ZA.log("[ZA] Zomboid Access " .. ZA.version .. " loaded") end)
+Events.OnMainMenuEnter.Add(function() ZA.log("[ZA] main menu entered") end)
 
 -- ---------- colours ----------
 -- Plain words for a colour (r, g, b from 0 to 1): "dark brown", "light grey", "golden blonde".

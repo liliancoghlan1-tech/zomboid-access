@@ -1,2 +1,8 @@
 __pycache__/
 *.pyc
+bridge/.venv/
+bridge/build/
+bridge/bridge.log
+installer/files/
+bridge/voices.json
+dist/

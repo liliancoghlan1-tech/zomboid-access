@@ -52,7 +52,7 @@ function F.describeBare(ui)
     if ui and ui.Type == "ISButton" and (isSkin(ui) or isHair(ui)) and ui.backgroundColor then
         local c = ui.backgroundColor
         local name = isSkin(ui) and (ZA.skinName(c.r, c.g, c.b) .. " skin") or (ZA.colourName(c.r, c.g, c.b) .. " hair")
-        return name .. ", colour button, Cross opens the colours", name
+        return name .. ", colour button, {Cross} opens the colours", name
     end
     return origBare(ui)
 end
@@ -63,14 +63,14 @@ F.readers.ISColorPicker = function(p)
     if not c then return nil end
     local m = main()
     local name = (m and p == m.colorPickerSkin) and (ZA.skinName(c.r, c.g, c.b) .. " skin") or ZA.colourName(c.r, c.g, c.b)
-    return p.index, name .. ", " .. p.index .. " of " .. #p.colors, ""
+    return p.index, name .. ZA.pos(p.index, #p.colors), ""
 end
 F.screens.ISColorPicker = {
     intro = function(p)
         local m = main()
         local what = (m and p == m.colorPickerSkin) and "Skin colour" or "Hair colour"
         local rows = p.rows and p.rows > 1 and "The arrows move around the grid" or "Left and Right move"
-        return what .. ". " .. rows .. ". Cross picks the colour, Circle closes without changing"
+        return what .. ". " .. rows .. ". {Cross} picks the colour, {Circle} closes without changing"
     end,
 }
 
@@ -78,8 +78,8 @@ F.screens.CharacterCreationMainCharacterPanel = {
     intro = function(panel)
         nameControls()
         return "Your character's name and looks. Up and Down move between settings, Left and Right along a row. "
-            .. "Cross opens a drop-down list, then Up and Down choose and Cross confirms; Cross also ticks a box or edits a name. "
-            .. "When you're done, press Circle, then Cross to start the game"
+            .. "{Cross} opens a drop-down list, then Up and Down choose and {Cross} confirms; {Cross} also ticks a box or edits a name. "
+            .. "When you're done, press {Circle}, then {Cross} to start the game"
     end,
 }
 
@@ -96,4 +96,26 @@ F.screens.CharacterCreationMain = {
 
 ZA.onTick(function()
     if main() and main():isVisible() then nameControls() end
+end)
+
+-- Voice Preview switches the game's music to "InGame" to play the voice (the game's own FIXME: "main menu music
+-- stops when this is set"), which silenced the menu music for good. Put the menu music back once the voice has
+-- had time to play.
+local restoreMusicAt = nil
+if CharacterCreationMain and CharacterCreationMain.onOptionMouseDown and not AP.wrappedPreview then
+    AP.wrappedPreview = true
+    local orig = CharacterCreationMain.onOptionMouseDown
+    CharacterCreationMain.onOptionMouseDown = function(self, button, ...)
+        local r = orig(self, button, ...)
+        if button and button.internal == "PLAYDEMOVOICE" and not (MainScreen.instance and MainScreen.instance.inGame) then
+            restoreMusicAt = getTimestampMs() + 2500
+        end
+        return r
+    end
+end
+ZA.onTick(function()
+    if restoreMusicAt and getTimestampMs() >= restoreMusicAt then
+        restoreMusicAt = nil
+        if not (MainScreen.instance and MainScreen.instance.inGame) then getSoundManager():setMusicState("MainMenu") end
+    end
 end)

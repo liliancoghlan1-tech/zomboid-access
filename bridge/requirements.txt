@@ -1,0 +1,2 @@
+prismatoid==0.18.3
+pyinstaller

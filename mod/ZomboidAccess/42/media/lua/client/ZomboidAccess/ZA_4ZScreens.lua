@@ -34,7 +34,7 @@ F.readers.ISScrollingListBox = function(p)
     if p.parent and p.parent.Type == "LoadGameScreen" then
         local it = p.items and p.items[p.selected]
         if not it then return p, "No saved games", "" end
-        return it, saveWords(it) .. ", " .. p.selected .. " of " .. #p.items, ""
+        return it, saveWords(it) .. ZA.pos(p.selected, #p.items), ""
     end
     return origList(p)
 end
@@ -50,7 +50,7 @@ function F.screenName(panel)
         local i = tabs:getActiveViewIndex()
         local v = tabs.viewList and tabs.viewList[i]
         if v then
-            return "Options, " .. ZA.clean(v.name) .. " tab, " .. i .. " of " .. #tabs.viewList .. ". L1 and R1 change tab"
+            return "Options, " .. ZA.clean(v.name) .. " tab" .. ZA.pos(i, #tabs.viewList) .. ". {L1} and {R1} change tab"
         end
     end
     return origName(panel)
@@ -58,7 +58,7 @@ end
 
 -- ---------- mods ----------
 
-F.screens.ModSelector = { name = "Mods", hint = "Hold R1 and press Up to reach the list of mods; Cross turns the selected one on or off. Hold R1 and press Down to come back to these buttons" }
+F.screens.ModSelector = { name = "Mods", hint = "Hold {R1} and press Up to reach the list of mods; {Cross} turns the selected one on or off. Hold {R1} and press Down to come back to these buttons" }
 F.readers.ModListBox = function(p)
     local it = p.items and p.items[p.selected]
     if not it then return p, "No mods", "" end
@@ -66,14 +66,14 @@ F.readers.ModListBox = function(p)
     local name = it.text or "?"
     pcall(function() name = d.modInfo:getName() end)
     local on = d.isActive and "on" or "off"
-    return it, ZA.clean(name) .. ", " .. on .. ", " .. p.selected .. " of " .. #p.items, on
+    return it, ZA.clean(name) .. ", " .. on .. ZA.pos(p.selected, #p.items), on
 end
-F.screens.ModListBox = { name = "List of mods", hint = "Up and Down choose, Cross turns a mod on or off" }
+F.screens.ModListBox = { name = "List of mods", hint = "Up and Down choose, {Cross} turns a mod on or off" }
 
 -- ---------- the world map ----------
 
 F.screens.ISWorldMap = { name = "World map. It's a picture: the scanner's Places and Where am I say the same things in words",
-    hint = "Circle closes it" }
+    hint = "{Circle} closes it" }
 
 -- ---------- dialogs ----------
 -- Yes/No boxes and message boxes say what they're asking before their buttons
@@ -121,8 +121,8 @@ F.screens.OnScreenKeyboardPanel = {
     name = "On-screen keyboard",
     intro = function(p)
         return "On-screen keyboard. Typed so far: " .. oskText(p.parent) .. ". The D-pad moves over the keys: numbers on the top row, "
-            .. "then the letters as on a computer keyboard. Cross types a key, Square deletes, Triangle types a space, "
-            .. "Circle cancels. Accept, at the right end of the third row, finishes"
+            .. "then the letters as on a computer keyboard. {Cross} types a key, {Square} deletes, {Triangle} types a space, "
+            .. "{Circle} cancels. Accept, at the right end of the third row, finishes"
     end,
 }
 F.screens.OnScreenKeyboardEntry = {

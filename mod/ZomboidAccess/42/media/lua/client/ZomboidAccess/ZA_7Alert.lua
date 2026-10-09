@@ -75,7 +75,7 @@ end
 
 function A.say(text)
     A.lastSaid = getTimestampMs()
-    print("[ZA] alert: " .. text)
+    ZA.log("[ZA] alert: " .. text)
     ZA.urgent(text)
 end
 

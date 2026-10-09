@@ -144,11 +144,11 @@ local function prompts(drag)
         if ok and t and t ~= "" then table.insert(out, btn .. ": " .. ZA.clean(t)) end
     end
     local a = actionWord(drag)
-    table.insert(out, "Cross: " .. (a ~= "" and a:lower() or "do it here"))
-    add("Triangle", "getYPrompt")
-    add("L1", "getLBPrompt")
-    add("R1", "getRBPrompt")
-    table.insert(out, "Circle: cancel")
+    table.insert(out, "{Cross}: " .. (a ~= "" and a:lower() or "do it here"))
+    add("{Triangle}", "getYPrompt")
+    add("{L1}", "getLBPrompt")
+    add("{R1}", "getRBPrompt")
+    table.insert(out, "{Circle}: cancel")
     return table.concat(out, ". ")
 end
 

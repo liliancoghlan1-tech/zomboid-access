@@ -41,7 +41,7 @@ F.readers.ISHealthPanel = function(panel)
     local it = lb.items[i]
     if not it then return "none", "", "" end
     local bp = it.item.bodyPart
-    return tostring(bp) .. "#" .. i, partWords(bp) .. " " .. i .. " of " .. #lb.items, ""
+    return tostring(bp) .. "#" .. i, partWords(bp) .. ZA.pos(i, #lb.items), ""
 end
 
 F.screens.ISHealthPanel = {
@@ -49,7 +49,7 @@ F.screens.ISHealthPanel = {
         local p = getPlayer()
         local n = #ZA.ST.injuries(p)
         return "Health screen. " .. ZA.ST.healthWords(p) .. ". " .. (n == 0 and "Nothing to treat" or (n .. (n == 1 and " body part" or " body parts") .. " to look at"))
-            .. ". Up and Down choose a body part, Cross shows what you can do for it. L1 and R1: other tabs. Circle closes"
+            .. ". Up and Down choose a body part, {Cross} shows what you can do for it. {L1} and {R1}: other tabs. {Circle} closes"
     end,
 }
 
@@ -73,15 +73,15 @@ F.readers.ISCharacterInfo = function(panel)
             s = s .. ", " .. math.floor((xp - cur) / (nxt - cur) * 100) .. " percent to level " .. (level + 1)
         end
     end)
-    return perk, s .. ", " .. i .. " of " .. #bars, ""
+    return perk, s .. ZA.pos(i, #bars), ""
 end
 
 F.screens.ISCharacterInfo = {
-    intro = function() return "Skills. Up and Down read each skill. L1 and R1: other tabs. Circle closes" end,
+    intro = function() return "Skills. Up and Down read each skill. {L1} and {R1}: other tabs. {Circle} closes" end,
 }
-F.screens.ISCharacterScreen = { name = "Character info", hint = "L1 and R1: other tabs. Circle closes" }
-F.screens.ISCharacterProtection = { name = "Protection", hint = "L1 and R1: other tabs. Circle closes" }
-F.screens.ISClothingInsPanel = { name = "Clothing warmth", hint = "L1 and R1: other tabs. Circle closes" }
+F.screens.ISCharacterScreen = { name = "Character info", hint = "{L1} and {R1}: other tabs. {Circle} closes" }
+F.screens.ISCharacterProtection = { name = "Protection", hint = "{L1} and {R1}: other tabs. {Circle} closes" }
+F.screens.ISClothingInsPanel = { name = "Clothing warmth", hint = "{L1} and {R1}: other tabs. {Circle} closes" }
 
 -- ---------- opening them from the mod ----------
 
@@ -103,12 +103,12 @@ table.insert(ZA.S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
         cat = "you", key = "you|healthscreen", noWhere = true, order = 900, baseName = "Health screen",
-        name = "Health screen: Square opens it, to treat injuries", x = p:getX(), y = p:getY(), z = p:getZ(),
+        name = "Health screen: {Square} opens it, to treat injuries", x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function() F.openInfoTab("health") end,
     })
     table.insert(lists.you, {
         cat = "you", key = "you|skills", noWhere = true, order = 901, baseName = "Skills",
-        name = "Skills: Square opens them", x = p:getX(), y = p:getY(), z = p:getZ(),
+        name = "Skills: {Square} opens them", x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function() F.openInfoTab("skills") end,
     })
 end)
