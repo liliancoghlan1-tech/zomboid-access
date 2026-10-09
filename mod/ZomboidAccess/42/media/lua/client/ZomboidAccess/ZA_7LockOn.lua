@@ -62,7 +62,12 @@ end
 
 -- Aiming held for you while lock-on faces a zombie; let go the moment it doesn't (only what we set ourselves).
 local function hold(p, on, why)
-    if on == (LK.aiming == true) then return end
+    -- Ask the game, not our memory: it drops the aim itself (a bite or a hit cancels aiming), and it must be
+    -- taken again as soon as you can. Only ever let go of an aim we took.
+    local now = false
+    pcall(function() now = p:isForceAim() end)
+    if on == now then LK.aiming = on; return end
+    if not on and not LK.aiming then return end
     local ok, err = pcall(function() p:setForceAim(on) end)
     if ok then
         LK.aiming = on
@@ -128,6 +133,17 @@ function LK.tick()
     if moving then hold(p, false, "walking"); return end
     if p:isPerformingAnAction() then hold(p, false, "doing something"); return end
     if manualAim(p, t) then hold(p, false, "aiming elsewhere"); return end
+    -- Bitten or hit: the game drops your aim and won't let you swing until it's over. A shove breaks a grab.
+    local hit = false
+    pcall(function() local h = p:getHitReaction(); hit = h ~= nil and h ~= "" end)
+    if hit then
+        local now = getTimestampMs()
+        if now - (LK.shoveSaid or 0) > 6000 then
+            LK.shoveSaid = now
+            ZA.urgent("It has hold of you: {L2} shoves it off, then {R2}.")
+        end
+        return
+    end
     p:faceThisObject(t)
     hold(p, true)
 end

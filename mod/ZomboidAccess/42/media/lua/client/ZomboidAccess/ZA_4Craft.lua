@@ -12,6 +12,10 @@
 
 ZA.CR = ZA.CR or {}
 local CR = ZA.CR
+-- The scanner (ZA_5Scan) loads after this file: make its table now, as ZA_4Health does, or adding Craft and Build to
+-- the You list fails at start ("attempted index: builders of non-table").
+ZA.S = ZA.S or {}
+ZA.S.builders = ZA.S.builders or {}
 local S = ZA.S
 
 -- ---------- menus ----------
