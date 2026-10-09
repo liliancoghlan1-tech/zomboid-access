@@ -209,7 +209,7 @@ To walk there round the zombies: the scanner's Ways out category, then Square. T
 
 Lock-on
 -------
-Off until you switch it on (the You list, Lock-on, then Square; the choice is kept in your save). While it's on, your character turns to face the nearest zombie within about 3.5 metres (one that's chasing you first) and stays on it until it dies or gets away: "Locked on: Zombie, 2 metres right". It doesn't turn you while you walk, and pushing the right stick to aim somewhere else wins over it. The fighting stays yours: pull R2 halfway to aim, all the way to swing; L2 shoves.
+Off until you switch it on (the You list, Lock-on, then Square; the choice is kept in your save). While it's on, your character turns to face the nearest zombie within about 3.5 metres (one that's chasing you first) and stays on it until it dies or gets away: "Locked on: Zombie, 2 metres right". It doesn't turn you while you walk, and pushing the right stick to aim somewhere else wins over it. While it faces a zombie and you stand still, it also aims at it for you, so pulling R2 all the way swings straight away; L2 shoves. That also makes it work with controllers whose triggers are only on or off (8BitDo and others), which can't be pulled halfway to aim. Walking, or aiming elsewhere with the right stick, lets go at once.
 
 
 Choosing a square (digging, sowing, building)

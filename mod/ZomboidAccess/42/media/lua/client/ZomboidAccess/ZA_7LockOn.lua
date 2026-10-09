@@ -3,7 +3,9 @@
 --   (one that's chasing you first), kept until it dies or gets more than 5 metres away. "Locked on: zombie, 2 metres
 --   right" when it picks one, "Lock-on free" when there's none left.
 --   It never turns you while you walk (left stick), and pushing the right stick to aim somewhere else wins over it.
---   The swing stays yours: pull R2 halfway to aim, all the way to swing; L2 shoves.
+--   While it faces a zombie (standing still) it also keeps you aiming at it, so pulling R2 all the way swings at
+--   once. That is what makes it work with controllers whose triggers are only on or off (8BitDo and others): the
+--   game swings only while you aim, and such a trigger can't be pulled halfway to aim first. L2 shoves.
 -- The choice is kept in the save (ModData "ZomboidAccessSettings").
 
 ZA.LK = ZA.LK or {}
@@ -58,10 +60,26 @@ local function manualAim(p, z)
     return (ax * dx + ay * dy) / (al * dl) < 0.77    -- more than about 40 degrees away
 end
 
+-- Aiming held for you while lock-on faces a zombie; let go the moment it doesn't (only what we set ourselves).
+local function hold(p, on)
+    if on == (LK.aiming == true) then return end
+    local ok, err = pcall(function() p:setForceAim(on) end)
+    if ok then LK.aiming = on
+    elseif not LK.aimErrSaid then LK.aimErrSaid = true; print("[ZA] lock-on aim: " .. tostring(err)) end
+end
+
 function LK.tick()
-    if not LK.isOn() then LK.target = nil; return end
     local p = getPlayer()
-    if not p or p:isDead() or p:getVehicle() then LK.target = nil; return end
+    if not LK.isOn() then
+        LK.target = nil
+        if p then hold(p, false) end
+        return
+    end
+    if not p or p:isDead() or p:getVehicle() then
+        LK.target = nil
+        if p and not p:isDead() then hold(p, false) end
+        return
+    end
     local t = LK.target
     if t and (not usable(p, t) or dist(p, t) > LK.keep) then
         t = nil
@@ -75,12 +93,12 @@ function LK.tick()
         end
         LK.target = t
     end
-    if not t then return end
+    if not t then hold(p, false); return end
     local moving = false
     pcall(function() moving = p:isPlayerMoving() end)
-    if moving or p:isPerformingAnAction() then return end
-    if manualAim(p, t) then return end
+    if moving or p:isPerformingAnAction() or manualAim(p, t) then hold(p, false); return end
     p:faceThisObject(t)
+    hold(p, true)
 end
 if not LK.ticking then
     LK.ticking = true
@@ -97,8 +115,8 @@ table.insert(S.builders, function(lists)
         cat = "you", key = "you|lockon", noWhere = true, order = 903, baseName = "Lock-on",
         name = function()
             local on = LK.isOn()
-            return "Lock-on: " .. (on and "on" or "off") .. ". Faces the nearest zombie within reach while you stand still; "
-                .. "you still aim with {R2} and swing. {Square} turns it " .. (on and "off" or "on")
+            return "Lock-on: " .. (on and "on" or "off") .. ". Faces and aims at the nearest zombie within reach while you "
+                .. "stand still: {R2} swings. {Square} turns it " .. (on and "off" or "on")
         end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()

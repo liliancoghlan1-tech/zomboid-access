@@ -119,8 +119,8 @@ ZA.TUL = {
         done = "Lock-on's on.",
     },
     lockOnFight = {
-        say = "Another one. Stand still and let lock-on face it for you. Pull {R2} halfway to aim, all the way to swing.",
-        hint = "Don't move the left stick: lock-on only turns you while you're standing. {R2} halfway, then all the way.",
+        say = "Another one. Stand still and let lock-on face it for you. It aims for you too, so when you hear the tick, pull {R2} all the way to swing.",
+        hint = "Don't move the left stick: lock-on only turns and aims you while you're standing. Wait for the tick, then {R2} all the way.",
         done = "See? Less fiddly. You can switch it off again in the You list whenever you like.",
     },
     escape = {
