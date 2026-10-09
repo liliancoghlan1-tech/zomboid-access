@@ -80,7 +80,7 @@ F.readers.ISScrollingListBox = function(p)
     local d = it.item or {}
     local text = ZA.clean(d.description or d.spiffo or "")
     local title = ZA.clean(d.title or it.text or "")
-    return it, title .. ", " .. p.selected .. " of " .. #p.items .. (text ~= "" and (". " .. text) or ""), ""
+    return it, title .. ZA.pos(p.selected, #p.items) .. (text ~= "" and (". " .. text) or ""), ""
 end
 
 -- After a death, "Continue with new character" uses the co-op versions of the creation screens.

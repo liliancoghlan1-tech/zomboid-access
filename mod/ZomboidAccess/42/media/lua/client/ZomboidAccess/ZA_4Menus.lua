@@ -93,7 +93,7 @@ F.readers.ISInventoryPage = function(page)
         if i < 0 then i = n - 1 elseif i >= n then i = 0 end
         local entry = pane.items[i + 1]
         key = tostring(inv) .. "#" .. i .. "#" .. tostring(entry)
-        words = itemWords(entry, page) .. ", " .. (i + 1) .. " of " .. n
+        words = itemWords(entry, page) .. ZA.pos((i + 1), n)
     end
     -- a new container: say which one first
     if page.zaLastInv == nil then
@@ -126,7 +126,7 @@ F.readers.ISContextMenu = function(menu)
     local parts = { ZA.clean(o.name or "") }
     if o.subOption and not o.onSelect then table.insert(parts, "more inside, Right opens it") end
     if o.notAvailable then table.insert(parts, "not available") end
-    local words = table.concat(parts, ", ") .. ", " .. i .. " of " .. count
+    local words = table.concat(parts, ", ") .. ZA.pos(i, count)
     pcall(function()
         local tip = o.toolTip and o.toolTip.description
         if tip and tip ~= "" then words = words .. ". " .. ZA.clean(tip) end

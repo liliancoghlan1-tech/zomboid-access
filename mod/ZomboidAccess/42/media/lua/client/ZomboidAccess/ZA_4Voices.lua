@@ -1,4 +1,5 @@
--- Zomboid Access: voices, at the end of the game's Options, Accessibility tab.
+-- Zomboid Access: the mod's settings at the end of the game's Options, Accessibility tab: positions in lists on or
+-- off, and the voices.
 -- Two voices: everything the mod says, and the radio (the tutorial guide). Each is the screen reader, or a SAPI or
 -- OneCore voice with its own speed and volume, so the radio can talk alongside the screen reader.
 -- The speech bridge lists the voices and the current settings in Zomboid/Lua/ZomboidAccess_voices.txt, and keeps
@@ -85,6 +86,18 @@ function V.addRows(self)
     local splitpoint = self:getWidth() / 2
     local comboWidth = 45 * (getCore():getOptionFontSizeReal() + 1) + 60
     self:addHorizontalLine(y, "Zomboid Access")
+
+    -- Positions in lists and menus ("2 of 25"): on unless turned off here; changes at once.
+    local hgt = MainOptions.style.buttonHeight
+    local positions = self:addYesNo(splitpoint, y, hgt, hgt, "Say positions in lists, like 2 of 25")
+    positions.zaLabel = "Say positions in lists, like 2 of 25"
+    local po = GameOption:new("zaPositions", positions)
+    function po.toUI() positions:setSelected(1, ZA.settings.positions ~= false) end
+    function po.apply() ZA.setSetting("positions", positions:isSelected(1)) end
+    function po.onChange() ZA.setSetting("positions", positions:isSelected(1)) end
+    self.gameOptions:add(po)
+    po.toUI()
+
     local st = V.read()
     if not st then
         self:addDescription(splitpoint - 200, y,

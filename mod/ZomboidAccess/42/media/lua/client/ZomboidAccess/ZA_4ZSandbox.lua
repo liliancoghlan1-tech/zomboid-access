@@ -38,12 +38,12 @@ F.readers.SandboxOptionsScreenListBox = function(p)
     local d = it.item or {}
     local name = ZA.clean(it.text or "")
     if d.category then
-        return it, name .. ", heading, " .. p.selected .. " of " .. #p.items, ""
+        return it, name .. ", heading" .. ZA.pos(p.selected, #p.items), ""
     end
     local count = ""
     local panel = d.panel
     if panel and panel.settingNames then count = ", " .. #panel.settingNames .. " settings" end
-    return it, name .. count .. ", " .. p.selected .. " of " .. #p.items, ""
+    return it, name .. count .. ZA.pos(p.selected, #p.items), ""
 end
 
 -- ---------- settings ----------
@@ -121,7 +121,7 @@ F.readers.SandboxOptionsScreenPanel = function(p)
     local label = name and p.labels[name]
     local title = label and ZA.clean(label.name or "") or F.labelFor(child)
     local words, value = valueOf(child)
-    local s = title .. ": " .. words .. ", " .. i .. " of " .. n
+    local s = title .. ": " .. words .. ZA.pos(i, n)
     local sec = sectionOf(p, child)
     if sec and sec ~= lastSection[p] then s = sec .. ". " .. s end
     lastSection[p] = sec

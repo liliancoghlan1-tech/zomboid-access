@@ -41,7 +41,7 @@ F.readers.ISHealthPanel = function(panel)
     local it = lb.items[i]
     if not it then return "none", "", "" end
     local bp = it.item.bodyPart
-    return tostring(bp) .. "#" .. i, partWords(bp) .. " " .. i .. " of " .. #lb.items, ""
+    return tostring(bp) .. "#" .. i, partWords(bp) .. ZA.pos(i, #lb.items), ""
 end
 
 F.screens.ISHealthPanel = {
@@ -73,7 +73,7 @@ F.readers.ISCharacterInfo = function(panel)
             s = s .. ", " .. math.floor((xp - cur) / (nxt - cur) * 100) .. " percent to level " .. (level + 1)
         end
     end)
-    return perk, s .. ", " .. i .. " of " .. #bars, ""
+    return perk, s .. ZA.pos(i, #bars), ""
 end
 
 F.screens.ISCharacterInfo = {

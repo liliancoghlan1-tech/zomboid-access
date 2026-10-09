@@ -639,12 +639,12 @@ function S.roomPart(x, y, z)
 end
 
 function S.describe(e, i, n)
-    if e.noWhere then return (entryName(e):gsub("[%.%s]+$", "")) .. (i and (", " .. i .. " of " .. n) or "") end
+    if e.noWhere then return (entryName(e):gsub("[%.%s]+$", "")) .. (i and ZA.pos(i, n) or "") end
     local x, y, z = entryPos(e)
     local w = S.where(x, y, z)
     local room = ""
     if not e.far then pcall(function() room = S.roomPart(x, y, z) end) end
-    return entryName(e) .. ", " .. w .. room .. (i and (", " .. i .. " of " .. n) or "")
+    return entryName(e) .. ", " .. w .. room .. (i and ZA.pos(i, n) or "")
 end
 
 local function speakEntry(i)

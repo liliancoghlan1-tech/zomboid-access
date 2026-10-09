@@ -34,7 +34,7 @@ F.readers.ISScrollingListBox = function(p)
     if p.parent and p.parent.Type == "LoadGameScreen" then
         local it = p.items and p.items[p.selected]
         if not it then return p, "No saved games", "" end
-        return it, saveWords(it) .. ", " .. p.selected .. " of " .. #p.items, ""
+        return it, saveWords(it) .. ZA.pos(p.selected, #p.items), ""
     end
     return origList(p)
 end
@@ -50,7 +50,7 @@ function F.screenName(panel)
         local i = tabs:getActiveViewIndex()
         local v = tabs.viewList and tabs.viewList[i]
         if v then
-            return "Options, " .. ZA.clean(v.name) .. " tab, " .. i .. " of " .. #tabs.viewList .. ". {L1} and {R1} change tab"
+            return "Options, " .. ZA.clean(v.name) .. " tab" .. ZA.pos(i, #tabs.viewList) .. ". {L1} and {R1} change tab"
         end
     end
     return origName(panel)
@@ -66,7 +66,7 @@ F.readers.ModListBox = function(p)
     local name = it.text or "?"
     pcall(function() name = d.modInfo:getName() end)
     local on = d.isActive and "on" or "off"
-    return it, ZA.clean(name) .. ", " .. on .. ", " .. p.selected .. " of " .. #p.items, on
+    return it, ZA.clean(name) .. ", " .. on .. ZA.pos(p.selected, #p.items), on
 end
 F.screens.ModListBox = { name = "List of mods", hint = "Up and Down choose, {Cross} turns a mod on or off" }
 

@@ -170,6 +170,7 @@ Switch the zombie sounds off or on in the You list (Zombie sounds, then Square);
 Voices
 ------
 Options, Accessibility tab, at the end under "Zomboid Access":
+- Say positions in lists, like 2 of 25: on at first. Turned off, menus, lists, tabs and the scanner leave out the "2 of 25". It is kept in Zomboid\Lua\ZomboidAccess_options.txt.
 - Zomboid Access voice: everything the mod says. Radio voice: the guide on the radio in the tutorial.
 - Each one is your screen reader (the default), or any SAPI or OneCore voice on your computer. Each SAPI or OneCore voice has its own speed and volume (0 to 100); the screen reader keeps its own settings.
 - A change is heard at once: the Zomboid Access voice says the new setting in the new voice, and the radio says a sample.

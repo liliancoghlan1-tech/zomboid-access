@@ -63,7 +63,7 @@ F.readers.ISColorPicker = function(p)
     if not c then return nil end
     local m = main()
     local name = (m and p == m.colorPickerSkin) and (ZA.skinName(c.r, c.g, c.b) .. " skin") or ZA.colourName(c.r, c.g, c.b)
-    return p.index, name .. ", " .. p.index .. " of " .. #p.colors, ""
+    return p.index, name .. ZA.pos(p.index, #p.colors), ""
 end
 F.screens.ISColorPicker = {
     intro = function(p)

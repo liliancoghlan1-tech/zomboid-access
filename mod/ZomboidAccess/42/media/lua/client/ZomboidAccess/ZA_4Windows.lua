@@ -234,10 +234,10 @@ F.readers.ISVehicleMechanics = function(w)
     local d = it.item
     local side = w.leftListHasFocus and "engine and insides" or "doors, body and lights"
     if d.cat then
-        return it, ZA.clean(d.name or "") .. ", heading, " .. side .. ", " .. i .. " of " .. #list.items, ""
+        return it, ZA.clean(d.name or "") .. ", heading, " .. side .. ZA.pos(i, #list.items), ""
     end
     local words = ZA.clean(d.name or "") .. ", " .. partWords(d.part)
-    return it, words .. ", " .. i .. " of " .. #list.items, ""
+    return it, words .. ZA.pos(i, #list.items), ""
 end
 specials.ISVehicleMechanics = function(w)
     local s = ""
@@ -267,7 +267,7 @@ F.readers.ISVehicleSeatUI = function(w)
         end
     end)
     table.insert(parts, status)
-    return seat, table.concat(parts, ", ") .. ", " .. w.joypadSeat .. " of " .. script:getPassengerCount(), ""
+    return seat, table.concat(parts, ", ") .. ZA.pos(w.joypadSeat, script:getPassengerCount()), ""
 end
 specials.ISVehicleSeatUI = function(w)
     return "Choose a seat. Left and Right across the car, Up and Down between rows. {Cross} sits there, {Square} gets out by that seat's door. {Circle} cancels"

@@ -19,6 +19,43 @@ ZA.version = "0.9.2"
 ZA.speechFile = "ZomboidAccess_speech.txt"
 ZA.cmdFile = "ZomboidAccess_cmd.txt"
 
+-- ---------- settings ----------
+-- The mod's own choices (Options, Accessibility, Zomboid Access), one "name=value" a line in
+-- Zomboid/Lua/ZomboidAccess_options.txt. Voices are kept by the speech bridge instead.
+
+ZA.optionsFile = "ZomboidAccess_options.txt"
+ZA.settings = { positions = true }
+do
+    local r = getFileReader(ZA.optionsFile, false)
+    if r then
+        local line = r:readLine()
+        while line do
+            local k, v = line:match("^([%w_]+)=(.*)$")
+            if k then
+                -- not "v == 'false' and false or v": that gives the string back, never false
+                if v == "true" then v = true elseif v == "false" then v = false end
+                ZA.settings[k] = v
+            end
+            line = r:readLine()
+        end
+        r:close()
+    end
+end
+function ZA.setSetting(name, value)
+    ZA.settings[name] = value
+    local w = getFileWriter(ZA.optionsFile, true, false)
+    if w then
+        for k, v in pairs(ZA.settings) do w:write(k .. "=" .. tostring(v) .. "\n") end
+        w:close()
+    end
+end
+
+-- A place in a list, ", 2 of 25", unless the player turned positions off.
+function ZA.pos(i, n)
+    if ZA.settings.positions == false then return "" end
+    return ", " .. tostring(i) .. " of " .. tostring(n)
+end
+
 -- ---------- text ----------
 
 -- Button names. The mod's own words write a button as {Cross}, {R2}, {Share}... (the PlayStation names), and they

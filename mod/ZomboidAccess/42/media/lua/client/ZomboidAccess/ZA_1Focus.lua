@@ -76,7 +76,7 @@ function F.describeBare(ui)
         -- Several boxes in one control (Single Context Menu: Player 1 to 4): Up and Down move between the boxes
         -- first, and only past the last (or first) one to the next row, so say the box the cursor is on.
         local n, i = #ui.options, ui.joypadIndex or 1
-        local v = str(ui.options[i]) .. (ui.selected[i] and ", checked" or ", not checked") .. ", " .. i .. " of " .. n
+        local v = str(ui.options[i]) .. (ui.selected[i] and ", checked" or ", not checked") .. ZA.pos(i, n)
         return v .. ". Up and Down move between the " .. n .. " boxes, then on; {Cross} ticks or unticks", v
     elseif t == "ISTickBox" then
         local parts = {}
@@ -91,14 +91,14 @@ function F.describeBare(ui)
             local i = ui.popup.selected
             local it = ui.popup.items and ui.popup.items[i]
             local v = it and ZA.clean(it.text or "") or ""
-            return v .. ", " .. i .. " of " .. #(ui.popup.items or {}), v
+            return v .. ZA.pos(i, #(ui.popup.items or {})), v
         end
         local v = F.comboText(ui)
-        return v .. ", " .. tostring(ui.selected) .. " of " .. tostring(#(ui.options or {})) .. ", drop-down list, {Cross} opens it", v
+        return v .. ZA.pos(tostring(ui.selected), tostring(#(ui.options or {}))) .. ", drop-down list, {Cross} opens it", v
     elseif t == "ISScrollingListBox" then
         local it = ui.items and ui.items[ui.selected]
         local v = it and ZA.clean(it.text or "") or "empty"
-        return v .. ", " .. tostring(ui.selected) .. " of " .. tostring(#(ui.items or {})), v
+        return v .. ZA.pos(tostring(ui.selected), tostring(#(ui.items or {}))), v
     elseif t == "ISVolumeControl" then
         local v = tostring(ui.getVolume and ui:getVolume() or ui.volume or "?")
         return "volume " .. v .. " of 10, Left and Right change it", "volume " .. v
@@ -172,7 +172,7 @@ F.readers.NewGameScreen = function(p)
     local n = 0
     for _, pan in ipairs(p.panels or {}) do if pan.title then n = n + 1 end end
     local desc = it.richText and ZA.clean(it.richText.textRaw or "") or ""
-    local words = ZA.clean(it.title or "") .. ", " .. tostring(p.selectedJoypad or "?") .. " of " .. n .. (desc ~= "" and (". " .. desc) or "")
+    local words = ZA.clean(it.title or "") .. ZA.pos(tostring(p.selectedJoypad or "?"), n) .. (desc ~= "" and (". " .. desc) or "")
     return it, words, ""
 end
 
@@ -186,7 +186,7 @@ function F.listReader(p)
     local desc = ""
     if type(data) == "table" then desc = ZA.clean(data.desc or data.description or "") end
     if desc == "" and it.tooltip then desc = ZA.clean(it.tooltip) end
-    return it, text .. ", " .. p.selected .. " of " .. #p.items .. (desc ~= "" and (". " .. desc) or ""), ""
+    return it, text .. ZA.pos(p.selected, #p.items) .. (desc ~= "" and (". " .. desc) or ""), ""
 end
 
 -- ---------- watching ----------

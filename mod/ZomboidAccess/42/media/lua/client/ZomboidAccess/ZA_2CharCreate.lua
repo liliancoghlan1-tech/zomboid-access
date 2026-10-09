@@ -91,7 +91,7 @@ F.readers.CharacterCreationProfessionListBox = function(p)
         extra = costWords(data, a.field == "listboxTraitSelected")
     end
     local desc = ZA.clean(it.tooltip or "")
-    local words = ZA.clean(it.text or "") .. (extra ~= "" and (", " .. extra) or "") .. ", " .. p.selected .. " of " .. #p.items
+    local words = ZA.clean(it.text or "") .. (extra ~= "" and (", " .. extra) or "") .. ZA.pos(p.selected, #p.items)
     if desc ~= "" then words = words .. ". " .. desc end
     local what = changes(s)
     -- Moving in the occupations list chooses what you land on: its name is already the line itself, so don't
