@@ -178,7 +178,7 @@ function ST.check()
             local phrases = {}
             for _, part in ipairs(order) do table.insert(phrases, part .. ": " .. table.concat(byPart[part], ", ")) end
             local t = table.concat(phrases, ". ")
-            print("[ZA] status: " .. t)
+            ZA.log("[ZA] status: " .. t)
             ZA.say(t .. "!")
         end
         local changes = {}
@@ -191,7 +191,7 @@ function ST.check()
         end
         if #changes > 0 then
             local t = table.concat(changes, ". ")
-            print("[ZA] status: " .. t)
+            ZA.log("[ZA] status: " .. t)
             ZA.queue(t .. ".")
         end
     end

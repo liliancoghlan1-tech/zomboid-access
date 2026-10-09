@@ -34,7 +34,7 @@ import sys
 import threading
 import time
 
-VERSION = "0.9.2"
+VERSION = "0.9.3"
 ZOMBOID = os.path.join(os.path.expandvars("%USERPROFILE%"), "Zomboid")
 SPEECH_FILE = os.path.join(ZOMBOID, "Lua", "ZomboidAccess_speech.txt")
 STATE_FILE = os.path.join(ZOMBOID, "Lua", "ZomboidAccess_voices.txt")

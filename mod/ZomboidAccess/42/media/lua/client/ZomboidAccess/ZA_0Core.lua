@@ -15,9 +15,21 @@ function ZA.mod(a, n)
     if r < 0 then r = r + n end
     return r
 end
-ZA.version = "0.9.2"
+ZA.version = "0.9.3"
 ZA.speechFile = "ZomboidAccess_speech.txt"
 ZA.cmdFile = "ZomboidAccess_cmd.txt"
+
+-- Developer mode: on only when Zomboid/Lua/ZomboidAccess_dev.txt exists (checked once at start). Players never
+-- have that file. It turns on the test channel below and the mod's log lines (ZA.log): everything said, the
+-- scanner's work, walking... in console.txt, for test tools. Errors are always logged (print).
+do
+    local r = getFileReader("ZomboidAccess_dev.txt", false)
+    ZA.dev = r ~= nil
+    if r then r:close() end
+end
+function ZA.log(text)
+    if ZA.dev then print(text) end
+end
 
 -- ---------- settings ----------
 -- The mod's own choices (Options, Accessibility, Zomboid Access), one "name=value" a line in
@@ -125,7 +137,7 @@ end
 
 local function write(kind, text)
     writeLine(kind .. "\t" .. text .. "\n")
-    print("[ZA] " .. (kind == "S" and "" or kind .. " ") .. text)
+    ZA.log("[ZA] " .. (kind == "S" and "" or kind .. " ") .. text)
 end
 
 -- A command for the bridge rather than words to say, e.g. ZA.bridge("V", "radio", "SAPI", "Brian", 50, 100).
@@ -182,7 +194,7 @@ ZA.seenEvents = {}
 local function tick(source)
     if not ZA.seenEvents[source] then
         ZA.seenEvents[source] = true
-        print("[ZA] event fires: " .. source)
+        ZA.log("[ZA] event fires: " .. source)
     end
     local now = getTimestampMs()
     if now == lastFrame then return end
@@ -204,12 +216,7 @@ end
 
 -- ---------- test channel ----------
 
--- Off unless the developer file exists (checked once at start).
-do
-    local r = getFileReader("ZomboidAccess_dev.txt", false)
-    ZA.dev = r ~= nil
-    if r then r:close() end
-end
+-- (ZA.dev: see the top of this file.)
 local cmdNext, cmdDone = 0, 0
 -- The file is only appended to by the test tools; the mod remembers how many lines it has run.
 -- (Rewriting the file to remove a line lost lines the tools appended at the same moment.)
@@ -236,16 +243,16 @@ ZA.onTick(function()
     cmdDone = cmdDone + 1
     local cmd = lines[cmdDone]
     if cmd == nil or cmd == "" then return end
-    print("[ZA] cmd: " .. cmd)
+    ZA.log("[ZA] cmd: " .. cmd)
     local f, err = loadstring(cmd)
     if not f then print("[ZA] cmd compile error: " .. tostring(err)); return end
     local ok, res = pcall(f)
     if not ok then print("[ZA] cmd error: " .. tostring(res))
-    elseif res ~= nil then print("[ZA] cmd result: " .. tostring(res)) end
+    elseif res ~= nil then ZA.log("[ZA] cmd result: " .. tostring(res)) end
 end)
 
-Events.OnGameBoot.Add(function() print("[ZA] Zomboid Access " .. ZA.version .. " loaded") end)
-Events.OnMainMenuEnter.Add(function() print("[ZA] main menu entered") end)
+Events.OnGameBoot.Add(function() ZA.log("[ZA] Zomboid Access " .. ZA.version .. " loaded") end)
+Events.OnMainMenuEnter.Add(function() ZA.log("[ZA] main menu entered") end)
 
 -- ---------- colours ----------
 -- Plain words for a colour (r, g, b from 0 to 1): "dark brown", "light grey", "golden blonde".

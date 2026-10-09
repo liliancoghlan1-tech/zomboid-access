@@ -20,7 +20,7 @@ function WH.loadStreets()
     if ZA.STREETS then
         WH.streets = {}
         for _, st in ipairs(ZA.STREETS) do table.insert(WH.streets, { name = st[1], pts = st[2] }) end
-        print("[ZA] streets loaded: " .. #WH.streets)
+        ZA.log("[ZA] streets loaded: " .. #WH.streets)
         return WH.streets
     end
     WH.streets = {}
@@ -46,7 +46,7 @@ function WH.loadStreets()
         endTextFileInput()
     end)
     if not ok then print("[ZA] streets error: " .. tostring(err)) end
-    print("[ZA] streets loaded: " .. #WH.streets)
+    ZA.log("[ZA] streets loaded: " .. #WH.streets)
     return WH.streets
 end
 

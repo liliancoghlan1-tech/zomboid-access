@@ -575,7 +575,7 @@ function TU.placeCar()
     giveKey(v)
     TU.car = v
     st.car = { x = best[1], y = best[2] }
-    print("[ZA] tutorial car at " .. best[1] .. "," .. best[2])
+    ZA.log("[ZA] tutorial car at " .. best[1] .. "," .. best[2])
 end
 
 -- a marker about 50 squares along the road from where you are (within what the game has loaded)
@@ -637,7 +637,7 @@ function TU.clearLeftovers()
         if z and not z:isDead() then table.insert(gone, z) end
     end
     for _, z in ipairs(gone) do pcall(function() z:removeFromWorld(); z:removeFromSquare() end) end
-    if #gone > 0 then print("[ZA] tutorial: cleared " .. #gone .. " zombies left from before") end
+    if #gone > 0 then ZA.log("[ZA] tutorial: cleared " .. #gone .. " zombies left from before") end
     TU.spawned, TU.want = {}, nil
 end
 
@@ -676,7 +676,7 @@ function TU.enter(i)
         if not ok then print("[ZA] tutorial setup error, step " .. i .. ": " .. tostring(err)) end
     end
     TU.radio(L(s.line).say)
-    print("[ZA] tutorial step " .. i .. " " .. s.line)
+    ZA.log("[ZA] tutorial step " .. i .. " " .. s.line)
 end
 
 function TU.tick()

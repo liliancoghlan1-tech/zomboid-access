@@ -26,7 +26,7 @@ local function switchOn(i)
         getCore():setOptionActiveController(i, true)
         getCore():saveOptions()
     end)
-    print("[ZA] menu start: switched on controller " .. i .. " (" .. tostring(getControllerName(i)) .. ") " .. (ok and "ok" or tostring(err)))
+    ZA.log("[ZA] menu start: switched on controller " .. i .. " (" .. tostring(getControllerName(i)) .. ") " .. (ok and "ok" or tostring(err)))
     return ok
 end
 
@@ -49,7 +49,7 @@ function MS.tick()
     MS.said = true
 
     local connected, active = pads()
-    print("[ZA] menu start: " .. #connected .. " controller(s) connected, " .. #active .. " switched on")
+    ZA.log("[ZA] menu start: " .. #connected .. " controller(s) connected, " .. #active .. " switched on")
     if #connected == 0 then
         ZA.say("Main menu. No controller found. Zomboid Access reads the menus through a controller: connect one, then press {Cross}.")
     else

@@ -36,7 +36,7 @@ function G.start()
     G.lastBand = math.floor(d / 5)
     local extra = ""
     if dz ~= 0 then extra = " It's on another floor: find the stairs first." end
-    print("[ZA] guide to " .. e.key)
+    ZA.log("[ZA] guide to " .. e.key)
     ZA.say("Guiding you to " .. S.entryName(e) .. ", " .. w .. "." .. extra .. " Hold {Triangle}, or Shift End, to stop.")
 end
 
@@ -80,7 +80,7 @@ function G.tick()
 
     local reach = e.far and (e.key:find("|town|", 1, true) and 80 or 3) or 1.6
     if (sameFloor or e.far) and d <= reach then
-        print("[ZA] guide arrived " .. e.key)
+        ZA.log("[ZA] guide arrived " .. e.key)
         G.stop("Arrived: " .. S.entryName(e) .. ". Guide off.")
         return
     end

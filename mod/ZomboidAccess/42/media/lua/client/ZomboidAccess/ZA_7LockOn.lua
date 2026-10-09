@@ -48,13 +48,14 @@ end
 
 -- The player steering the aim with the right stick, away from the target: leave it to them.
 local tmp = Vector2.new(0, 0)
-local function manualAim(p, z)
-    -- Only when you push the right stick: with lock-on aiming, the aim follows the facing and lags a moving zombie,
-    -- which isn't you aiming elsewhere.
-    local jd = ZA.joypad and ZA.joypad()
-    local sx, sy = 0, 0
-    pcall(function() sx, sy = getJoypadAimingAxisX(jd.id), getJoypadAimingAxisY(jd.id) end)
-    if (sx or 0) ^ 2 + (sy or 0) ^ 2 < 0.09 then return false end
+local function manualAim(p, z, bind)
+    -- With a controller, only while you push the right stick: with lock-on aiming, the aim follows the facing and
+    -- lags a moving zombie, which isn't you aiming elsewhere. With a mouse, the aim is always yours.
+    if bind then
+        local sx, sy = 0, 0
+        pcall(function() sx, sy = getJoypadAimingAxisX(bind), getJoypadAimingAxisY(bind) end)
+        if (sx or 0) ^ 2 + (sy or 0) ^ 2 < 0.09 then return false end
+    end
     local ok, v = pcall(function() return p:getAimVector(tmp) end)
     if not ok or not v then return false end
     local ax, ay = v:getX(), v:getY()
@@ -66,71 +67,50 @@ local function manualAim(p, z)
     return (ax * dx + ay * dy) / (al * dl) < 0.77    -- more than about 40 degrees away
 end
 
--- Aiming held for you while lock-on faces a zombie; let go the moment it doesn't (only what we set ourselves).
-local function hold(p, on, why)
+-- Aiming held for you while lock-on faces a zombie; let go the moment it doesn't (only an aim we took).
+local function hold(p, on)
     -- Ask the game, not our memory: it drops the aim itself (a bite or a hit cancels aiming), and it must be
-    -- taken again as soon as you can. Only ever let go of an aim we took.
+    -- taken again as soon as you can.
     local now = false
     pcall(function() now = p:isForceAim() end)
     if on == now then LK.aiming = on; return end
     if not on and not LK.aiming then return end
     local ok, err = pcall(function() p:setForceAim(on) end)
-    if ok then
-        -- logged when lock-on changes its mind, not each time it takes back an aim the game dropped
-        if LK.aiming ~= on then print("[ZA] lock-on aim " .. (on and "on" or "off") .. (why and (" (" .. why .. ")") or "")) end
-        LK.aiming = on
-    elseif not LK.aimErrSaid then LK.aimErrSaid = true; print("[ZA] lock-on aim: " .. tostring(err)) end
+    if ok then LK.aiming = on
+    elseif not LK.aimErrSaid then LK.aimErrSaid = true; ZA.log("[ZA] lock-on aim: " .. tostring(err)) end
 end
 
--- Each R2 press while locked on writes one line to the game's log (console.txt), not spoken: what the game sees
--- at that moment, to tell why a press does or doesn't swing (stagger, no weapon, too close...).
+-- The controller lock-on helps: nil when the player plays with keyboard and mouse (lock-on then only turns you,
+-- as it always did, and the mouse aims).
+local function pad(p)
+    local ok, bind = pcall(function() return p:getJoypadBind() end)
+    if not ok or bind == nil or bind < 0 then return nil end
+    return bind
+end
+
+-- R2 just pressed (not held).
 local rtWasDown = false
-local function logPress(p, t)
-    local jd = ZA.joypad and ZA.joypad()
+local function rtPressed(bind)
     local down = false
-    pcall(function() down = jd and isJoypadRTPressed(jd.id) or false end)
-    if down and not rtWasDown then
-        local parts = {}
-        local function add(name, f)
-            local ok, v = pcall(f)
-            table.insert(parts, name .. "=" .. (ok and tostring(v) or "?"))
-        end
-        add("state", function() return p:getActionStateName() end)
-        add("aiming", function() return p:isAiming() end)
-        add("forceAim", function() return p:isForceAim() end)
-        add("hand", function() local it = p:getPrimaryHandItem(); return it and it:getType() or "none" end)
-        add("dist", function() return string.format("%.2f", dist(p, t)) end)
-        add("hitReaction", function() return p:getHitReaction() end)
-        add("moving", function() return p:isPlayerMoving() end)
-        add("action", function() return p:isPerformingAnAction() end)
-        print("[ZA] R2 while locked on: " .. table.concat(parts, " "))
-    end
+    pcall(function() down = isJoypadRTPressed(bind) end)
     local pressed = down and not rtWasDown
     rtWasDown = down
     return pressed
 end
 
--- The game swings from R2 only while the right stick is pushed (tested with an 8BitDo: a held aim isn't enough), so
--- with lock-on holding the aim, an R2 press starts the swing itself (AttemptAttack, the game's own). It needs the
--- weapon raised (isWeaponReady), which can take a moment after the aim is taken: keep trying for 0.6 seconds.
--- If the game already started the swing (stick pushed too), leave it: never a second one.
+-- The game swings from R2 only while the right stick is pushed (a held aim isn't enough; found with an 8BitDo
+-- controller, whose triggers are only on or off). So with lock-on holding the aim, an R2 press starts the swing
+-- itself (AttemptAttack, the game's own). It needs the weapon raised (isWeaponReady), which can take a moment
+-- after the aim is taken: keep trying for 0.6 seconds. If the game started the swing (stick pushed too), leave it.
 local function swing(p)
-    local now = getTimestampMs()
     if not LK.swingUntil then return end
     local started = false
     pcall(function() started = p:isAttackStarted() end)
-    if started then LK.swingUntil = nil; return end
-    if now > LK.swingUntil then
-        LK.swingUntil = nil
-        print("[ZA] lock-on swing: weapon never got ready")
-        return
-    end
+    if started or getTimestampMs() > LK.swingUntil then LK.swingUntil = nil; return end
     local ready = false
     pcall(function() ready = p:isWeaponReady() end)
     if not ready then return end
-    local ok, err = pcall(function() p:AttemptAttack() end)
-    pcall(function() started = p:isAttackStarted() end)
-    print("[ZA] lock-on swing: " .. (ok and (started and "started" or "refused") or ("error " .. tostring(err))))
+    pcall(function() p:AttemptAttack() end)
     LK.swingUntil = nil
 end
 
@@ -138,12 +118,12 @@ function LK.tick()
     local p = getPlayer()
     if not LK.isOn() then
         LK.target = nil
-        if p then hold(p, false, "lock-on off") end
+        if p then hold(p, false) end
         return
     end
     if not p or p:isDead() or p:getVehicle() then
         LK.target = nil
-        if p and not p:isDead() then hold(p, false, "dead or in a vehicle") end
+        if p and not p:isDead() then hold(p, false) end
         return
     end
     local t = LK.target
@@ -159,13 +139,12 @@ function LK.tick()
         end
         LK.target = t
     end
-    if not t then hold(p, false, "no zombie in reach"); return end
-    local pressed = logPress(p, t)
+    if not t then hold(p, false); return end
+    local bind = pad(p)
+    local pressed = bind and rtPressed(bind)
     local moving = false
     pcall(function() moving = p:isPlayerMoving() end)
-    if moving then hold(p, false, "walking"); return end
-    if p:isPerformingAnAction() then hold(p, false, "doing something"); return end
-    if manualAim(p, t) then hold(p, false, "aiming elsewhere"); return end
+    if moving or p:isPerformingAnAction() or manualAim(p, t, bind) then hold(p, false); return end
     -- Bitten or hit: the game drops your aim and won't let you swing until it's over. A shove breaks a grab.
     local hit = false
     pcall(function() local h = p:getHitReaction(); hit = h ~= nil and h ~= "" end)
@@ -178,6 +157,7 @@ function LK.tick()
         return
     end
     p:faceThisObject(t)
+    if not bind then hold(p, false); return end
     hold(p, true)
     if pressed then LK.swingUntil = getTimestampMs() + 600 end
     swing(p)

@@ -73,7 +73,10 @@ end
 local function option(self, name, control, row)
     local o = GameOption:new(name, control)
     function o.toUI() toUI(row) end
-    function o.apply() send(row, false) end
+    -- Each change goes to the bridge as it is made (onChange). Accepting the Options screen applies every option on
+    -- it: sending these again then could only overwrite the saved voices with whatever the rows showed (defaults,
+    -- if they were built before the bridge listed its voices), so it sends nothing.
+    function o.apply() end
     function o.onChange()
         if control.label then control.label:setName(tostring(control:getCurrentValue())) end
         send(row, true)

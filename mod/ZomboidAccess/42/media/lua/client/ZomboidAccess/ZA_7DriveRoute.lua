@@ -286,7 +286,7 @@ function RT.start(e, mode)
     else
         ZA.say("Route to " .. S.entryName(e) .. ", " .. where .. ". The steering tone follows the route. {Square} or End stops it.")
     end
-    print("[ZA] route " .. mode .. " to " .. e.key .. " (" .. #RT.route.pts .. " points)")
+    ZA.log("[ZA] route " .. mode .. " to " .. e.key .. " (" .. #RT.route.pts .. " points)")
     return true
 end
 

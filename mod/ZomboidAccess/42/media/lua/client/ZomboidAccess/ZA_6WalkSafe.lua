@@ -190,7 +190,7 @@ local function startLeg(p)
     W.action, W.entry = a, e
     W.watchFail(a)
     st.legs = st.legs + 1
-    print("[ZA] safe leg " .. st.legs .. " to " .. path[i].x .. "," .. path[i].y .. " (" .. #path .. " squares left)")
+    ZA.log("[ZA] safe leg " .. st.legs .. " to " .. path[i].x .. "," .. path[i].y .. " (" .. #path .. " squares left)")
     return true
 end
 
@@ -226,7 +226,7 @@ function WS.start(p, e, warn)
     W.known = {}
     local zl = getCell():getZombieList()
     for i = 0, zl:size() - 1 do W.known[zl:get(i)] = true end
-    print("[ZA] safe walk to " .. e.key)
+    ZA.log("[ZA] safe walk to " .. e.key)
     ZA.say((warn or "") .. "Walking round the zombies to " .. S.entryName(e) .. ". {Square} or End stops.")
     return true
 end

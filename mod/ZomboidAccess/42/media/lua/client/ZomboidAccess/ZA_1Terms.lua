@@ -58,7 +58,7 @@ function TS.tick()
         ZA.say(F.screens.ISTermsOfServiceUI.name .. ". " .. text)
         ZA.queue("Keyboard: Up and Down move between the buttons, Enter presses one. Controller: press {Cross} first, then the D-pad and {Cross}.")
         ZA.queue(buttonWords(p, TS.index))
-        print("[ZA] terms of service panel read")
+        ZA.log("[ZA] terms of service panel read")
         return
     end
 
@@ -83,7 +83,7 @@ function TS.tick()
     elseif pressed("enter", Keyboard.KEY_RETURN) then
         local b = buttons(p)[TS.index]
         if b then
-            print("[ZA] terms: pressing " .. tostring(b.title))
+            ZA.log("[ZA] terms: pressing " .. tostring(b.title))
             if b == p.buttonAccept then ZA.say("Accepted") end
             if b == p.button1 or b == p.button2 then ZA.say("Opening the page in your web browser or the Steam overlay") end
             b:forceClick()

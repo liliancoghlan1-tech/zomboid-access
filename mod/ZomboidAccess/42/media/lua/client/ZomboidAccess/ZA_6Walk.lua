@@ -194,7 +194,7 @@ function W.startTravel(p, e, warn)
         return
     end
     local x, y, z = S.entryPos(e)
-    print("[ZA] travel to " .. e.key)
+    ZA.log("[ZA] travel to " .. e.key)
     ZA.say(warn .. "Travelling to " .. S.entryName(e) .. ", " .. S.where(x, y, z) .. ". {Square} or End stops.")
 end
 
@@ -204,7 +204,7 @@ local function travelNext(p, ok)
     local e = tr.entry
     if travelArrived(p, e) then
         W.travel, W.action, W.entry = nil, nil, nil
-        print("[ZA] travel arrived " .. e.key)
+        ZA.log("[ZA] travel arrived " .. e.key)
         if e.key:find("|town|", 1, true) then
             ZA.say("You're in " .. e.baseName .. ". The Places category lists what's here.")
         elseif e.marker then
@@ -299,7 +299,7 @@ function W.go()
     end
     W.action, W.entry, W.startedAt, W.try = action, e, getTimestampMs(), try
     watchFail(action)
-    print("[ZA] walk to " .. e.key)
+    ZA.log("[ZA] walk to " .. e.key)
     ZA.say(warn .. "Walking to " .. name .. ". {Square} or End stops.")
 end
 
@@ -317,7 +317,7 @@ function W.watch()
             local e = W.entry
             W.action, W.entry, W.travel, W.safe = nil, nil, nil, nil
             ISTimedActionQueue.clear(p)
-            print("[ZA] walk stopped by zombie " .. (e and e.key or ""))
+            ZA.log("[ZA] walk stopped by zombie " .. (e and e.key or ""))
             ZA.urgent("Stopped! " .. S.threatText(z) .. ".")
             return
         end
@@ -364,7 +364,7 @@ function W.watch()
             W.afterArrive = nil
             f()
         else ZA.say("Arrived: " .. name .. ".") end
-        print("[ZA] walk arrived " .. e.key)
+        ZA.log("[ZA] walk arrived " .. e.key)
     elseif failed then
         -- one more go another way before giving up
         local try = (W.try or 1) + 1
@@ -373,7 +373,7 @@ function W.watch()
             if ok and res == true then
                 W.action, W.entry, W.try = action, e, try
                 watchFail(action)
-                print("[ZA] walk retry " .. try .. " " .. e.key)
+                ZA.log("[ZA] walk retry " .. try .. " " .. e.key)
                 return
             end
         end
@@ -383,7 +383,7 @@ function W.watch()
     else
         W.afterArrive = nil
         ZA.say("Stopped. " .. name .. " is " .. S.where(x, y, z) .. ".")
-        print("[ZA] walk stopped " .. e.key)
+        ZA.log("[ZA] walk stopped " .. e.key)
     end
 end
 if not W.ticking then
