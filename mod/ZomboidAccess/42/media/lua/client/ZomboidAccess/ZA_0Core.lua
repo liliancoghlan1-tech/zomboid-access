@@ -51,11 +51,23 @@ end
 
 local lastText, lastTime = nil, 0
 
+-- The file only grows while the game runs, so past this size it starts again. Only after a quiet half second:
+-- the bridge reads every 40 ms, so by then it has every line, and none is lost to the restart.
+local SPEECH_FILE_MAX = 256 * 1024
+function ZA.speechFileStart() return "#" .. tostring(getTimestampMs()) .. "\n" end
+local written, lastWrite = 0, 0
+
 local function write(kind, text)
-    local w = getFileWriter(ZA.speechFile, true, true)
+    local line = kind .. "\t" .. text .. "\n"
+    local now = getTimestampMs()
+    local fresh = written > SPEECH_FILE_MAX and now - lastWrite > 500
+    local w = getFileWriter(ZA.speechFile, true, not fresh)
     if w then
-        w:write(kind .. "\t" .. text .. "\n")
+        if fresh then w:write(ZA.speechFileStart()) end
+        w:write(line)
         w:close()
+        written = (fresh and 0 or written) + #line
+        lastWrite = now
     end
     print("[ZA] " .. (kind == "S" and "" or kind .. " ") .. text)
 end
@@ -87,10 +99,12 @@ function ZA.repeatLast()
     if ZA.last then lastText = nil; ZA.say(ZA.last) end
 end
 
--- Start each session with an empty speech file, so the bridge never replays old lines.
+-- Start each session with a fresh speech file, so the bridge never replays old lines.
+-- Every fresh file begins with "#<time>": the bridge knows a new file by its first line changing, even when the
+-- new one is already as long as what it had read of the old one.
 do
     local w = getFileWriter(ZA.speechFile, true, false)
-    if w then w:write(""); w:close() end
+    if w then w:write(ZA.speechFileStart()); w:close() end
 end
 
 -- ---------- ticks ----------

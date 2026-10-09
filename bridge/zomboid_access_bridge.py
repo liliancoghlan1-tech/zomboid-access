@@ -13,9 +13,10 @@
 # Usage:
 #   ZomboidAccessBridge.exe %command%   as the Steam launch option: starts the game, speaks while it runs,
 #                                        and closes when the game closes. (The installer sets this up.)
-#   ZomboidAccessBridge.exe             speaks until closed.
+#   ZomboidAccessBridge.exe             waits for the game to start, speaks while it runs, closes with it.
 #   ZomboidAccessBridge.exe --test      says one line through the screen reader and exits.
-# It only reads those two files and writes its own log next to itself: no network.
+# It only reads those two files, deletes the speech file when the game closes (the mod starts it again each time
+# and keeps it small), and writes its own log next to itself: no network.
 
 import ctypes
 import logging
@@ -54,14 +55,28 @@ def _here():
 
 
 class Tail:
-    """New complete lines of a file that the game may empty or recreate at any time."""
+    """New complete lines of a file that the game may empty or recreate at any time.
+    A new session is noticed by the file shrinking, being recreated (its file ID; not the creation time, which
+    Windows reuses for a file recreated within seconds), or by its first bytes changing: both files begin with a
+    timestamp line (the mod's "#<ms>", the game log's date), and a restarted file can already be as long as what
+    was read before."""
+
+    HEAD = 64
 
     def __init__(self, path, fromStart=False):
         self.path = path
         st = self._stat()
         self.offset = 0 if fromStart or not st else st.st_size
-        self.fileId = st.st_ino if st else None  # not the creation time: Windows reuses it for a file recreated within seconds
+        self.fileId = st.st_ino if st else None
+        self.head = self._readHead() if self.offset else b""
         self.partial = b""
+
+    def _readHead(self):
+        try:
+            with open(self.path, "rb") as f:
+                return f.read(self.HEAD)
+        except OSError:
+            return b""
 
     def _stat(self):
         try:
@@ -74,22 +89,31 @@ class Tail:
         if not st:
             return []
         if st.st_size < self.offset or st.st_ino != self.fileId:
-            # The game started a new session: it emptied or rewrote the file.
-            self.offset = 0
-            self.partial = b""
-            self.fileId = st.st_ino
+            self._restart(st)
         if st.st_size == self.offset:
             return []
         try:
             with open(self.path, "rb") as f:
+                if self.head and f.read(len(self.head)) != self.head:
+                    self._restart(st)
                 f.seek(self.offset)
                 data = f.read(min(st.st_size - self.offset, limit))
+                self.offset += len(data)
+                if len(self.head) < self.HEAD:
+                    f.seek(0)
+                    self.head = f.read(min(self.HEAD, self.offset))
         except OSError:
             return []
-        self.offset += len(data)
         lines = (self.partial + data).split(b"\n")
         self.partial = lines.pop()  # an unfinished last line waits for the next read
-        return lines
+        return [l for l in lines if not l.startswith(b"#")]
+
+    def _restart(self, st):
+        # The game started a new session, or the mod started its file again.
+        self.offset = 0
+        self.partial = b""
+        self.head = b""
+        self.fileId = st.st_ino
 
 
 class Speaker:
@@ -283,14 +307,19 @@ def speak(game):
         sp.say("S\t" + STARTING_TEXT)
 
     gameGone = threading.Event()
-    if game:
-        def watch():
+
+    def watch():
+        if game:
             game.wait()
-            # The process Steam started may hand over to another one: wait until no game is left.
-            while _gameRunning():
+        else:
+            # Started on its own: wait for the game to start, then for it to close.
+            while not _gameRunning():
                 time.sleep(2)
-            gameGone.set()
-        threading.Thread(target=watch, daemon=True).start()
+        # The process Steam started may hand over to another one: wait until no game is left.
+        while _gameRunning():
+            time.sleep(2)
+        gameGone.set()
+    threading.Thread(target=watch, daemon=True).start()
 
     while not gameGone.is_set():
         try:
@@ -305,6 +334,11 @@ def speak(game):
             log.error("poll failed", exc_info=True)
         time.sleep(POLL_S)
     log.info("the game has closed")
+    # Nothing in the speech file is needed once the game is gone.
+    try:
+        os.remove(SPEECH_FILE)
+    except OSError:
+        pass
     return 0
 
 

@@ -34,7 +34,7 @@ Installing
 
 To remove it: exit Steam and run Uninstall.bat. It removes the mod, the speech bridge and its launch option.
 
-The game mod writes what to say into a file (Zomboid\Lua\ZomboidAccess_speech.txt), and the speech bridge reads it out through your screen reader, using Prism (https://github.com/ethindp/prism). Both are needed. The bridge reads only that file and the game's log; it doesn't use the network. While the game starts, while a world loads, and on the "press to start" screen, the game runs no mod code at all, so the bridge watches the game's log and says what's happening itself.
+The game mod writes what to say into a file (Zomboid\Lua\ZomboidAccess_speech.txt), and the speech bridge reads it out through your screen reader, using Prism (https://github.com/ethindp/prism). Both are needed. The file stays small (it starts again past 256 KB) and the bridge deletes it when the game closes. The bridge reads only that file and the game's log; it doesn't use the network. While the game starts, while a world loads, and on the "press to start" screen, the game runs no mod code at all, so the bridge watches the game's log and says what's happening itself.
 Not using Steam? Run the bridge with the game after it, for example: "%LOCALAPPDATA%\ZomboidAccess\ZomboidAccessBridge.exe" "C:\Games\ProjectZomboid\ProjectZomboid64.exe". It starts the game and closes with it.
 
 
