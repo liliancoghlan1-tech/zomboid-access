@@ -3,8 +3,13 @@
 # %USERPROFILE%\Zomboid\Lua\ZomboidAccess_speech.txt. This program watches that file and speaks each new line
 # through Prism (https://github.com/ethindp/prism), which talks to whichever screen reader is running
 # (NVDA, JAWS, ZDSR, ...) or, with none, to the Windows voices (OneCore, SAPI).
-# A line is "S<tab>text" (say now, interrupting), "Q<tab>text" (say after), "G<tab>text" (the tutorial guide:
-# protected, see _speak) or "U<tab>text" (urgent: always interrupts).
+# A line is "S<tab>text" (say now, interrupting), "Q<tab>text" (say after), "P<tab>text" (say now, and don't let
+# the next lines cut it off), "G<tab>text" (the tutorial guide on the radio, see Speaker.say) or "U<tab>text"
+# (urgent: always interrupts). Lines starting with "#" mark a fresh file.
+# Voices: everything is said in the "speech" voice except the radio, which has its own "radio" voice. Each is the
+# screen reader or a SAPI or OneCore voice, set in the game's Options, Accessibility: the mod sends
+# "V<tab>channel<tab>engine<tab>voice<tab>speed<tab>volume" to change one and "T<tab>channel<tab>text" for a sample,
+# and the bridge lists the voices and current settings in Zomboid\Lua\ZomboidAccess_voices.txt for it.
 #
 # While the game starts, while a world loads, and on the "press to start" screen after it, the game runs no mod
 # code at all. The game's own log (Zomboid\console.txt) says when each of those begins and ends, so the bridge
@@ -15,10 +20,12 @@
 #                                        and closes when the game closes. (The installer sets this up.)
 #   ZomboidAccessBridge.exe             waits for the game to start, speaks while it runs, closes with it.
 #   ZomboidAccessBridge.exe --test      says one line through the screen reader and exits.
-# It only reads those two files, deletes the speech file when the game closes (the mod starts it again each time
-# and keeps it small), and writes its own log next to itself: no network.
+# Files: it reads the speech file and the game log, writes the voice list for the mod (Zomboid\Lua), and keeps its
+# voice settings (voices.json) and log next to itself. When the game closes it deletes the speech file and the
+# voice list (the mod starts the speech file again each time and keeps it small). No network.
 
 import ctypes
+import json
 import logging
 import os
 import subprocess
@@ -29,6 +36,7 @@ import time
 VERSION = "0.9.2"
 ZOMBOID = os.path.join(os.path.expandvars("%USERPROFILE%"), "Zomboid")
 SPEECH_FILE = os.path.join(ZOMBOID, "Lua", "ZomboidAccess_speech.txt")
+STATE_FILE = os.path.join(ZOMBOID, "Lua", "ZomboidAccess_voices.txt")
 CONSOLE_FILE = os.path.join(ZOMBOID, "console.txt")
 GAME_EXE = "ProjectZomboid64.exe"
 POLL_S = 0.04
@@ -116,17 +124,126 @@ class Tail:
         self.fileId = st.st_ino
 
 
+SCREEN_READER = "screen reader"
+ENGINES = {"SAPI": "SAPI", "OneCore": "ONE_CORE"}  # what players can choose besides the screen reader
+CHANNELS = ("speech", "radio")
+DEFAULT_VOICE = {"engine": SCREEN_READER, "voice": "", "rate": 50, "volume": 100}
+
+
+class Channel:
+    """One voice: the screen reader, or a SAPI or OneCore voice of its own (with its own speed and volume)."""
+
+    def __init__(self, name, settings):
+        self.name = name
+        self.settings = dict(DEFAULT_VOICE, **settings)
+        self.own = None  # this channel's own backend, when it isn't the screen reader
+        self.guardUntil = 0.0
+        self.guardFrom = 0.0
+
+    @property
+    def engine(self):
+        return self.settings["engine"]
+
+    def configure(self, ctx, prism):
+        self.own = None
+        if self.engine == SCREEN_READER:
+            return
+        try:
+            b = ctx.create(getattr(prism.BackendId, ENGINES[self.engine]))
+            want = self.settings["voice"]
+            for i in range(b.voices_count):
+                if b.get_voice_name(i) == want:
+                    b.voice = i
+                    break
+            b.rate = max(0, min(100, int(self.settings["rate"]))) / 100.0
+            b.volume = max(0, min(100, int(self.settings["volume"]))) / 100.0
+            self.own = b
+            log.info("%s voice: %s %s, speed %s, volume %s", self.name, self.engine, want,
+                     self.settings["rate"], self.settings["volume"])
+        except Exception:
+            log.error("%s voice %r could not be set up; using the screen reader", self.name, self.settings,
+                      exc_info=True)
+
+
 class Speaker:
-    """Prism, with the tutorial guide's protection the NVDA add-on had."""
+    """Prism, with one voice per channel, and the tutorial guide's protection the NVDA add-on had."""
 
     def __init__(self):
         import prism  # here, not at the top: if it can't load, the game must still start
 
+        self.prism = prism
         self.ctx = prism.Context()
-        self.backend = None
+        self.reader = None
         self.nextCheck = 0.0
-        self.guardUntil = 0.0
         self._pick()
+        saved = self._load()
+        self.channels = {c: Channel(c, saved.get(c, {})) for c in CHANNELS}
+        for ch in self.channels.values():
+            ch.configure(self.ctx, prism)
+        self.voices = self._listVoices()
+
+    # ---------- settings ----------
+    # Kept next to the bridge, so they also apply to what is said before the mod runs (starting, loading).
+
+    @staticmethod
+    def _settingsFile():
+        return os.path.join(_here(), "voices.json")
+
+    def _load(self):
+        try:
+            with open(self._settingsFile(), encoding="utf-8") as f:
+                return json.load(f)
+        except (OSError, ValueError):
+            return {}
+
+    def _save(self):
+        try:
+            with open(self._settingsFile(), "w", encoding="utf-8") as f:
+                json.dump({c: ch.settings for c, ch in self.channels.items()}, f, indent=1)
+        except OSError:
+            log.error("could not save the voices", exc_info=True)
+
+    def _listVoices(self):
+        voices = []
+        for engine, bid in ENGINES.items():
+            try:
+                b = self.ctx.create(getattr(self.prism.BackendId, bid))
+                voices += [(engine, b.get_voice_name(i)) for i in range(b.voices_count)]
+            except Exception:
+                log.info("no %s voices", engine)
+        return voices
+
+    # The mod reads this to fill the voice settings in Options, Accessibility. Removed when the game closes.
+    def writeState(self):
+        lines = ["#" + str(int(time.time() * 1000)), "reader\t" + (self.reader.name if self.reader else "none")]
+        lines += ["voice\t%s\t%s" % v for v in self.voices]
+        for c, ch in self.channels.items():
+            st = ch.settings
+            lines.append("set\t%s\t%s\t%s\t%d\t%d" % (c, st["engine"], st["voice"], st["rate"], st["volume"]))
+        try:
+            with open(STATE_FILE, "w", encoding="utf-8", newline="\n") as f:
+                f.write("\n".join(lines) + "\n")
+        except OSError:
+            log.error("could not write the voice list", exc_info=True)
+
+    def setVoice(self, fields):
+        # "V<tab>channel<tab>engine<tab>voice<tab>speed<tab>volume", from Options, Accessibility.
+        if len(fields) < 5 or fields[0] not in self.channels:
+            return
+        name, engine, voice, rate, volume = fields[:5]
+        if engine != SCREEN_READER and engine not in ENGINES:
+            return
+        try:
+            settings = {"engine": engine, "voice": voice, "rate": int(rate), "volume": int(volume)}
+        except ValueError:
+            return
+        ch = self.channels[name]
+        ch.settings = settings
+        ch.configure(self.ctx, self.prism)
+        self._save()
+        self.writeState()
+
+    # ---------- the screen reader ----------
 
     def _pick(self):
         try:
@@ -134,10 +251,9 @@ class Speaker:
         except Exception:
             log.error("no speech backend", exc_info=True)
             return
-        if self.backend is None or best.name != self.backend.name:
-            self.backend = best
-            self.features = best.features
-            log.info("speaking through %s", best.name)
+        if self.reader is None or best.name != self.reader.name:
+            self.reader = best
+            log.info("screen reader: %s", best.name)
 
     def refresh(self):
         # A screen reader started or closed after us: move to the best one there is now.
@@ -146,31 +262,42 @@ class Speaker:
             self.nextCheck = now + 5.0
             self._pick()
 
-    # The tutorial guide ("G") waits for what is being said, and while the guide talks, ordinary "S" lines
-    # wait too instead of cutting it off. Only "U" (danger, combat) interrupts everything.
-    # The guard lasts as long as the guide's words take to say, or until the screen reader says it has
-    # stopped talking, when it can tell us (NVDA can't, through Prism).
-    def _guarded(self):
+    # ---------- speaking ----------
+
+    def _backend(self, ch):
+        return ch.own or self.reader
+
+    def _out(self, ch, text, interrupt):
+        b = self._backend(ch)
+        if b is None:
+            return
+        if b.features.supports_output:
+            b.output(text, interrupt)
+        else:
+            b.speak(text, interrupt)
+
+    # A protected line (the tutorial guide "G" when it shares the everyday voice, or "P") isn't cut off: while it
+    # is said, ordinary "S" lines wait instead. Only "U" (danger, combat) interrupts everything.
+    # The guard lasts until the voice says it has stopped, when it can tell us (NVDA can't, through Prism),
+    # or else about as long as the words take at a brisk screen reader speed.
+    def _guard(self, ch, text):
         now = time.monotonic()
-        if now >= self.guardUntil:
+        ch.guardUntil = max(ch.guardUntil, now) + 1.0 + 0.25 * len(text.split())
+        ch.guardFrom = now
+
+    def _guarded(self, ch):
+        now = time.monotonic()
+        if now >= ch.guardUntil:
             return False
-        if self.features.supports_is_speaking:
+        b = self._backend(ch)
+        if b is not None and b.features.supports_is_speaking and now - ch.guardFrom > 0.5:
             try:
-                if not self.backend.speaking:
-                    self.guardUntil = 0.0
+                if not b.speaking:
+                    ch.guardUntil = 0.0
                     return False
             except Exception:
                 pass
         return True
-
-    def _out(self, text, interrupt):
-        b = self.backend
-        if b is None:
-            return
-        if self.features.supports_output:
-            b.output(text, interrupt)
-        else:
-            b.speak(text, interrupt)
 
     def say(self, line):
         if not line:
@@ -178,22 +305,38 @@ class Speaker:
         kind, _, text = line.partition("\t")
         if not text:
             kind, text = "S", line
-        text = text.strip()
-        if not text:
+        if kind == "V":
+            self.setVoice(text.split("\t"))
             return
+        speech, radio = self.channels["speech"], self.channels["radio"]
         try:
-            if kind == "G":
-                now = time.monotonic()
-                self.guardUntil = max(self.guardUntil, now) + 2.0 + 0.35 * len(text.split())
-                self._out(text, False)
+            if kind == "T":
+                # A sample of a voice, as it is changed in Options: "T<tab>channel<tab>text".
+                name, _, sample = text.partition("\t")
+                if name in self.channels and sample.strip():
+                    self._out(self.channels[name], sample.strip(), True)
                 return
-            if kind == "U":
-                self.guardUntil = 0.0
-                self._out(text, True)
-            elif kind == "S" and not self._guarded():
-                self._out(text, True)
+            text = text.strip()
+            if not text:
+                return
+            if kind == "G":
+                # The radio queues behind itself. In the everyday voice it is protected; in a voice of its own
+                # it talks alongside, and nothing has to wait for it.
+                if self._backend(radio) is self._backend(speech):
+                    self._guard(speech, text)
+                    self._out(speech, text, False)
+                else:
+                    self._out(radio, text, False)
+            elif kind == "U":
+                speech.guardUntil = 0.0
+                self._out(speech, text, True)
+            elif kind == "P":
+                self._out(speech, text, not self._guarded(speech))
+                self._guard(speech, text)
+            elif kind == "S" and not self._guarded(speech):
+                self._out(speech, text, True)
             else:
-                self._out(text, False)
+                self._out(speech, text, False)
         except Exception:
             log.error("could not speak %r", line, exc_info=True)
 
@@ -279,7 +422,7 @@ def main(argv):
 
     if argv[:1] == ["--test"]:
         sp = Speaker()
-        sp.say("S\tZomboid Access is speaking through " + (sp.backend.name if sp.backend else "nothing") + ".")
+        sp.say("S\tZomboid Access is speaking through " + (sp.reader.name if sp.reader else "nothing") + ".")
         time.sleep(3)
         return 0
 
@@ -300,6 +443,7 @@ def speak(game):
         return game.wait() if game else 0
 
     sp = Speaker()
+    sp.writeState()
     speech = Tail(SPEECH_FILE)
     console = Tail(CONSOLE_FILE)
     loading = Loading(sp, launching=game is not None)
@@ -334,11 +478,12 @@ def speak(game):
             log.error("poll failed", exc_info=True)
         time.sleep(POLL_S)
     log.info("the game has closed")
-    # Nothing in the speech file is needed once the game is gone.
-    try:
-        os.remove(SPEECH_FILE)
-    except OSError:
-        pass
+    # Nothing in these files is needed once the game is gone.
+    for path in (SPEECH_FILE, STATE_FILE):
+        try:
+            os.remove(path)
+        except OSError:
+            pass
     return 0
 
 

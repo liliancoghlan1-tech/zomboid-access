@@ -162,8 +162,18 @@ The mod's own sounds, which only you hear (zombies don't):
 - Two quick rising whistles from the best way out while something chases you (Escape help).
 - Driving: a low blip means steer left, a high blip steer right; faster the more you need to turn.
 - Fishing: two little water plips when a fish bites.
-- The tutorial: a short radio crackle before the guide speaks. The guide waits until other speech is finished, and other speech waits for the guide, so nothing cuts it off (except a zombie warning outside the tutorial).
+- The tutorial: a short radio crackle before the guide speaks. If the radio has a voice of its own (see Voices), it talks alongside everything else. If it shares your screen reader's voice, the guide waits until other speech is finished, and other speech waits for the guide, so nothing cuts it off (except a zombie warning outside the tutorial).
 Switch the zombie sounds off or on in the You list (Zombie sounds, then Square); Escape help and Driving help have their own switches there.
+
+
+Voices
+------
+Options, Accessibility tab, at the end under "Zomboid Access":
+- Zomboid Access voice: everything the mod says. Radio voice: the guide on the radio in the tutorial.
+- Each one is your screen reader (the default), or any SAPI or OneCore voice on your computer. Each SAPI or OneCore voice has its own speed and volume (0 to 100); the screen reader keeps its own settings.
+- A change is heard at once: the Zomboid Access voice says the new setting in the new voice, and the radio says a sample.
+- Giving the radio a voice of its own lets it talk while you move around menus and the scanner, without anything waiting for it.
+The choices are kept by the speech bridge (voices.json next to it), so they also cover what is said while the game starts and loads.
 
 
 Fighting

@@ -57,8 +57,7 @@ local SPEECH_FILE_MAX = 256 * 1024
 function ZA.speechFileStart() return "#" .. tostring(getTimestampMs()) .. "\n" end
 local written, lastWrite = 0, 0
 
-local function write(kind, text)
-    local line = kind .. "\t" .. text .. "\n"
+local function writeLine(line)
     local now = getTimestampMs()
     local fresh = written > SPEECH_FILE_MAX and now - lastWrite > 500
     local w = getFileWriter(ZA.speechFile, true, not fresh)
@@ -69,11 +68,23 @@ local function write(kind, text)
         written = (fresh and 0 or written) + #line
         lastWrite = now
     end
+end
+
+local function write(kind, text)
+    writeLine(kind .. "\t" .. text .. "\n")
     print("[ZA] " .. (kind == "S" and "" or kind .. " ") .. text)
 end
 
--- kind: "S" say now (interrupts), "Q" after what is speaking, "G" the tutorial guide (waits for what is
--- speaking, and nothing but "U" cuts it off), "U" urgent: danger and combat, always at once.
+-- A command for the bridge rather than words to say, e.g. ZA.bridge("V", "radio", "SAPI", "Brian", 50, 100).
+function ZA.bridge(...)
+    local fields = {}
+    for i, v in ipairs({ ... }) do fields[i] = tostring(v):gsub("[\t\r\n]", " ") end
+    writeLine(table.concat(fields, "\t") .. "\n")
+end
+
+-- kind: "S" say now (interrupts), "Q" after what is speaking, "P" say now and don't let the next lines cut it
+-- off, "G" the tutorial guide on the radio (its own voice, or protected like "P" when it shares the everyday
+-- voice), "U" urgent: danger and combat, always at once.
 local function speak(text, kind)
     text = ZA.clean(text)
     if text == "" then return end
@@ -88,6 +99,7 @@ end
 function ZA.say(text, queue) speak(text, queue and "Q" or "S") end
 function ZA.queue(text) speak(text, "Q") end
 function ZA.guide(text) speak(text, "G") end
+function ZA.protected(text) speak(text, "P") end
 -- In the tutorial nothing can really hurt you, so there the guide's words win: urgent is plain "S" there.
 function ZA.urgent(text)
     local tutorial = false

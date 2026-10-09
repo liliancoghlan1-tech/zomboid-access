@@ -4,3 +4,4 @@ bridge/.venv/
 bridge/build/
 bridge/bridge.log
 installer/files/
+bridge/voices.json

@@ -72,7 +72,8 @@ end
 function TU.startFromMainMenu()
     local ms = MainScreen and MainScreen.instance
     if not ms or not ms.soloScreen then return false end
-    ZA.say("The game's own tutorial turns all mods off, so Zomboid Access would go silent. "
+    -- protected: the character screen opens at once, and its first words would cut this off
+    ZA.protected("The game's own tutorial turns all mods off, so Zomboid Access would go silent. "
         .. "Starting the Zomboid Access Tutorial instead.")
     ActiveMods.getById("currentGame"):copyFrom(ActiveMods.getById("default"))
     local ng = ms.soloScreen
