@@ -61,23 +61,51 @@ local function manualAim(p, z)
 end
 
 -- Aiming held for you while lock-on faces a zombie; let go the moment it doesn't (only what we set ourselves).
-local function hold(p, on)
+local function hold(p, on, why)
     if on == (LK.aiming == true) then return end
     local ok, err = pcall(function() p:setForceAim(on) end)
-    if ok then LK.aiming = on
+    if ok then
+        LK.aiming = on
+        print("[ZA] lock-on aim " .. (on and "on" or "off") .. (why and (" (" .. why .. ")") or ""))
     elseif not LK.aimErrSaid then LK.aimErrSaid = true; print("[ZA] lock-on aim: " .. tostring(err)) end
+end
+
+-- Each R2 press while locked on writes one line to the game's log (console.txt), not spoken: what the game sees
+-- at that moment, to tell why a press does or doesn't swing (stagger, no weapon, too close...).
+local rtWasDown = false
+local function logPress(p, t)
+    local jd = ZA.joypad and ZA.joypad()
+    local down = false
+    pcall(function() down = jd and isJoypadRTPressed(jd.id) or false end)
+    if down and not rtWasDown then
+        local parts = {}
+        local function add(name, f)
+            local ok, v = pcall(f)
+            table.insert(parts, name .. "=" .. (ok and tostring(v) or "?"))
+        end
+        add("state", function() return p:getActionStateName() end)
+        add("aiming", function() return p:isAiming() end)
+        add("forceAim", function() return p:isForceAim() end)
+        add("hand", function() local it = p:getPrimaryHandItem(); return it and it:getType() or "none" end)
+        add("dist", function() return string.format("%.2f", dist(p, t)) end)
+        add("hitReaction", function() return p:getHitReaction() end)
+        add("moving", function() return p:isPlayerMoving() end)
+        add("action", function() return p:isPerformingAnAction() end)
+        print("[ZA] R2 while locked on: " .. table.concat(parts, " "))
+    end
+    rtWasDown = down
 end
 
 function LK.tick()
     local p = getPlayer()
     if not LK.isOn() then
         LK.target = nil
-        if p then hold(p, false) end
+        if p then hold(p, false, "lock-on off") end
         return
     end
     if not p or p:isDead() or p:getVehicle() then
         LK.target = nil
-        if p and not p:isDead() then hold(p, false) end
+        if p and not p:isDead() then hold(p, false, "dead or in a vehicle") end
         return
     end
     local t = LK.target
@@ -93,10 +121,13 @@ function LK.tick()
         end
         LK.target = t
     end
-    if not t then hold(p, false); return end
+    if not t then hold(p, false, "no zombie in reach"); return end
+    logPress(p, t)
     local moving = false
     pcall(function() moving = p:isPlayerMoving() end)
-    if moving or p:isPerformingAnAction() or manualAim(p, t) then hold(p, false); return end
+    if moving then hold(p, false, "walking"); return end
+    if p:isPerformingAnAction() then hold(p, false, "doing something"); return end
+    if manualAim(p, t) then hold(p, false, "aiming elsewhere"); return end
     p:faceThisObject(t)
     hold(p, true)
 end
