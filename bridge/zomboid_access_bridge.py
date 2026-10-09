@@ -429,7 +429,20 @@ def _alreadyRunning():
     return kernel32.GetLastError() == 183  # ERROR_ALREADY_EXISTS
 
 
+def useZomboidFolder(argv):
+    # The game keeps its folder in %USERPROFILE%\Zomboid unless it was started with -cachedir=<folder>.
+    global ZOMBOID, SPEECH_FILE, STATE_FILE, CONSOLE_FILE, OPTIONS_FILE
+    for a in argv:
+        if a.lower().startswith("-cachedir="):
+            ZOMBOID = os.path.join(a.split("=", 1)[1].strip('"'), "Zomboid")
+    SPEECH_FILE = os.path.join(ZOMBOID, "Lua", "ZomboidAccess_speech.txt")
+    STATE_FILE = os.path.join(ZOMBOID, "Lua", "ZomboidAccess_voices.txt")
+    CONSOLE_FILE = os.path.join(ZOMBOID, "console.txt")
+    OPTIONS_FILE = os.path.join(ZOMBOID, "options.ini")
+
+
 def main(argv):
+    useZomboidFolder(argv)
     try:
         logging.basicConfig(
             filename=os.path.join(_here(), "bridge.log"), filemode="w", level=logging.INFO,

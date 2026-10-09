@@ -3,7 +3,7 @@ Zomboid Access
 
 Play Project Zomboid with a screen reader (NVDA, JAWS and others): menus, character creation, a scanner for everything around you, walking by itself (round zombies when they're near), zombie warnings and escape help, health and moodles, fighting with optional lock-on, inventory and looting, cooking, farming, foraging, fishing, crafting and building, driving with a steering tone or autodrive, and an interactive tutorial with a guide on the radio.
 
-This is an EARLY VERSION (0.9.0). It has been played through character creation, the tutorial, looting houses, fighting and dying many times, but not long-term survival. Please send what doesn't work (see Feedback at the end).
+This is an EARLY VERSION (0.9.3). It has been played through character creation, the tutorial, looting houses, fighting and dying many times, but not long-term survival. Please send what doesn't work (see Feedback at the end).
 
 New here? Start with the tutorial: New game, Challenges, "Zomboid Access Tutorial" (see Tutorial below).
 
@@ -19,20 +19,24 @@ What you need
 - A controller (tested with a PlayStation 5 controller; any controller works, see Controller). The menus and character creation are read only through a controller. In the world, the keyboard keys below work too.
 
 
-Installing
-----------
+Installing, updating and removing
+---------------------------------
 1. Start Project Zomboid once, wait about a minute, then close it with Alt+F4. (The game clears its mod list the first time it starts.)
    The very first time, the game stops on a Terms of Service screen before the main menu. Nothing reads it until the mod is installed, so just close the game there with Alt+F4.
-2. Exit Steam (Steam menu, Exit). Unzip this folder anywhere and run Install.bat. It:
+2. Exit Steam (Steam menu, Exit). Unzip this folder anywhere and run ZomboidAccessSetup.exe. It opens on a Status box that says what you have and what the newest version is, with that version's release notes in the box after it, then the buttons Install (or Update), Reinstall, Uninstall and Close. Install:
+   - checks GitHub for the newest version (if it can't, it installs the copy in this folder),
    - copies the mod into your Zomboid\mods folder and turns it on (other mods you use stay on),
    - copies the speech bridge to %LOCALAPPDATA%\ZomboidAccess, and sets Project Zomboid's launch option in Steam so the bridge starts with the game and closes with it (any launch options you had, like -debug, are kept after it),
+   - keeps a copy of itself there, with a Start menu entry, "Zomboid Access Setup", for updates,
    - says which screen reader it will speak through, as a test.
+   It finds the game in any of your Steam libraries, on any drive; the mod itself goes in your Zomboid folder (or the one your -cachedir= launch option names).
    If Steam was running, it tells you to exit Steam and run it again, or how to type the launch option yourself.
-   Upgrading from 0.9.2 or earlier: remove the old NVDA add-on (NVDA menu, Tools, Add-on store, Installed add-ons, Zomboid Access, Remove), or everything is said twice. The installer reminds you.
+   Upgrading from 0.9.2 or earlier: remove the old NVDA add-on (NVDA menu, Tools, Add-on store, Installed add-ons, Zomboid Access, Remove), or everything is said twice. Setup reminds you.
 3. Start Project Zomboid. If the Terms of Service screen comes up, it is read out: Up and Down move between its buttons, Enter presses one (it starts on Accept). With a controller, press Cross first, then the D-pad and Cross.
    Then the main menu says "Press Cross on your controller to start": press Cross and it reads the menu. If it says "No controller found", connect one and press Cross.
 
-To remove it: exit Steam and run Uninstall.bat. It removes the mod, the speech bridge and its launch option.
+Updating: run "Zomboid Access Setup" from the Start menu. When there is a newer version it says so, shows its release notes, and asks: Update replaces only the files that changed and removes ones the new version no longer has. Your voice settings, your other options and your saves are kept.
+Reinstall copies every file again, if something seems broken. Uninstall removes the mod, the speech bridge (with its voice settings) and its launch option; your saves are kept.
 
 The game mod writes what to say into a file (Zomboid\Lua\ZomboidAccess_speech.txt), and the speech bridge reads it out through your screen reader, using Prism (https://github.com/ethindp/prism). Both are needed. The file stays small (it starts again past 256 KB) and the bridge deletes it when the game closes. The bridge reads only that file and the game's log; it doesn't use the network. While the game starts, while a world loads, and on the "press to start" screen, the game runs no mod code at all, so the bridge watches the game's log and says what's happening itself.
 Not using Steam? Run the bridge with the game after it, for example: "%LOCALAPPDATA%\ZomboidAccess\ZomboidAccessBridge.exe" "C:\Games\ProjectZomboid\ProjectZomboid64.exe". It starts the game and closes with it.
