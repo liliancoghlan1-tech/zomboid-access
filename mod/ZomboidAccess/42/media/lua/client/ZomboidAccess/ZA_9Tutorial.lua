@@ -289,7 +289,13 @@ TU.steps = {
           return m ~= nil and m.isSearchMode == true
       end },
     { line = "forageFind", check = function()
-          ZA.S.build()
+          -- a whole scan takes about 90 ms: checks run every tick, so look again only every 2 seconds
+          -- (rebuilding each tick slowed the game to a crawl while this lesson waited)
+          local t = getTimestampMs()
+          if t >= (TU.nextFindScan or 0) then
+              TU.nextFindScan = t + 2000
+              ZA.S.build()
+          end
           return #(ZA.S.lists.finds or {}) > 0
       end },
     { line = "foragePick", setup = function() TU.pickFrom = ZA.FG and ZA.FG.picked or 0 end,

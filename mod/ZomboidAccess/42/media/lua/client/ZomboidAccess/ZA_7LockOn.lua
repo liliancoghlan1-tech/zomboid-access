@@ -105,7 +105,33 @@ local function logPress(p, t)
         add("action", function() return p:isPerformingAnAction() end)
         print("[ZA] R2 while locked on: " .. table.concat(parts, " "))
     end
+    local pressed = down and not rtWasDown
     rtWasDown = down
+    return pressed
+end
+
+-- The game swings from R2 only while the right stick is pushed (tested with an 8BitDo: a held aim isn't enough), so
+-- with lock-on holding the aim, an R2 press starts the swing itself (AttemptAttack, the game's own). It needs the
+-- weapon raised (isWeaponReady), which can take a moment after the aim is taken: keep trying for 0.6 seconds.
+-- If the game already started the swing (stick pushed too), leave it: never a second one.
+local function swing(p)
+    local now = getTimestampMs()
+    if not LK.swingUntil then return end
+    local started = false
+    pcall(function() started = p:isAttackStarted() end)
+    if started then LK.swingUntil = nil; return end
+    if now > LK.swingUntil then
+        LK.swingUntil = nil
+        print("[ZA] lock-on swing: weapon never got ready")
+        return
+    end
+    local ready = false
+    pcall(function() ready = p:isWeaponReady() end)
+    if not ready then return end
+    local ok, err = pcall(function() p:AttemptAttack() end)
+    pcall(function() started = p:isAttackStarted() end)
+    print("[ZA] lock-on swing: " .. (ok and (started and "started" or "refused") or ("error " .. tostring(err))))
+    LK.swingUntil = nil
 end
 
 function LK.tick()
@@ -134,7 +160,7 @@ function LK.tick()
         LK.target = t
     end
     if not t then hold(p, false, "no zombie in reach"); return end
-    logPress(p, t)
+    local pressed = logPress(p, t)
     local moving = false
     pcall(function() moving = p:isPlayerMoving() end)
     if moving then hold(p, false, "walking"); return end
@@ -153,6 +179,8 @@ function LK.tick()
     end
     p:faceThisObject(t)
     hold(p, true)
+    if pressed then LK.swingUntil = getTimestampMs() + 600 end
+    swing(p)
 end
 if not LK.ticking then
     LK.ticking = true
