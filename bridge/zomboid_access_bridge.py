@@ -446,7 +446,17 @@ def main(argv):
         return 0
 
     # Steam waits on us: start the game first, so a problem with speech never keeps it from starting.
-    game = subprocess.Popen(argv) if argv else None
+    # The packaged bridge points Windows' DLL search at its own folder, and a program it starts inherits that: the game
+    # then loaded the bridge's VCRUNTIME140.dll and kept it open. Give the game the normal search.
+    # (Then put ours back: the bridge itself still loads Prism from there.)
+    kernel32, ours = ctypes.windll.kernel32, ctypes.create_unicode_buffer(1024)
+    hadOurs = kernel32.GetDllDirectoryW(1024, ours) > 0
+    kernel32.SetDllDirectoryW(None)
+    try:
+        game = subprocess.Popen(argv) if argv else None
+    finally:
+        if hadOurs:
+            kernel32.SetDllDirectoryW(ours.value)
     if game:
         log.info("started the game, pid %d", game.pid)
     try:

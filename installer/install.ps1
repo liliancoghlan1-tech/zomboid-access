@@ -61,7 +61,11 @@ $bridgeDir = Join-Path $env:LOCALAPPDATA "ZomboidAccess"
 $bridge = Join-Path $bridgeDir "ZomboidAccessBridge.exe"
 Get-Process -Name "ZomboidAccessBridge" -ErrorAction SilentlyContinue | Stop-Process -Force
 New-Item -ItemType Directory -Force $bridgeDir | Out-Null
-Copy-Item -LiteralPath (Join-Path $here "files\ZomboidAccessBridge.exe") -Destination $bridge -Force
+# The bridge is a folder: ZomboidAccessBridge.exe and its _internal files. Replace those, and keep what the bridge
+# saved next to itself (voices.json).
+$internal = Join-Path $bridgeDir "_internal"
+if (Test-Path -LiteralPath $internal) { Remove-Item -LiteralPath $internal -Recurse -Force }
+Copy-Item -Path (Join-Path $here "files\ZomboidAccessBridge\*") -Destination $bridgeDir -Recurse -Force
 Say "Copied the speech bridge to $bridge."
 
 $option = Get-ZABridgeOption $bridge
