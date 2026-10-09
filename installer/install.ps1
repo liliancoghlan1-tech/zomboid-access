@@ -67,8 +67,12 @@ Say "Copied the speech bridge to $bridge."
 $option = Get-ZABridgeOption $bridge
 $manual = "In Steam, open Project Zomboid's Properties, and in Launch Options type: $option"
 $configs = Get-ZASteamConfigs
+# Reading (a change that changes nothing) is safe while Steam runs: only writing has to wait for it to close.
+$alreadySet = @($configs | Where-Object { (Update-ZALaunchOptions $_ { param($old) $old }).Value -like ('"' + $bridge + '"*') }).Count -gt 0
 if ($configs.Count -eq 0) {
     Say "Couldn't find Steam's settings. $manual"
+} elseif ($alreadySet) {
+    Say "Steam already starts the speech bridge with Project Zomboid."
 } elseif (-not $env:ZA_TEST_STEAM_DIR -and (Get-Process -Name "steam" -ErrorAction SilentlyContinue)) {
     Say "Steam is running, so its launch options can't be changed now. Exit Steam (Steam menu, Exit), then run Install again."
     Say "Or do it yourself: $manual"
