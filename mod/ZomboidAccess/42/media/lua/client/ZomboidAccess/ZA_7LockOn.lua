@@ -49,6 +49,12 @@ end
 -- The player steering the aim with the right stick, away from the target: leave it to them.
 local tmp = Vector2.new(0, 0)
 local function manualAim(p, z)
+    -- Only when you push the right stick: with lock-on aiming, the aim follows the facing and lags a moving zombie,
+    -- which isn't you aiming elsewhere.
+    local jd = ZA.joypad and ZA.joypad()
+    local sx, sy = 0, 0
+    pcall(function() sx, sy = getJoypadAimingAxisX(jd.id), getJoypadAimingAxisY(jd.id) end)
+    if (sx or 0) ^ 2 + (sy or 0) ^ 2 < 0.09 then return false end
     local ok, v = pcall(function() return p:getAimVector(tmp) end)
     if not ok or not v then return false end
     local ax, ay = v:getX(), v:getY()
@@ -70,8 +76,9 @@ local function hold(p, on, why)
     if not on and not LK.aiming then return end
     local ok, err = pcall(function() p:setForceAim(on) end)
     if ok then
+        -- logged when lock-on changes its mind, not each time it takes back an aim the game dropped
+        if LK.aiming ~= on then print("[ZA] lock-on aim " .. (on and "on" or "off") .. (why and (" (" .. why .. ")") or "")) end
         LK.aiming = on
-        print("[ZA] lock-on aim " .. (on and "on" or "off") .. (why and (" (" .. why .. ")") or ""))
     elseif not LK.aimErrSaid then LK.aimErrSaid = true; print("[ZA] lock-on aim: " .. tostring(err)) end
 end
 

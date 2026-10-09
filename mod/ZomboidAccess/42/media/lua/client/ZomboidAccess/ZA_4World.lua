@@ -65,6 +65,26 @@ end)
 -- The survival guide that opens on a new game.
 F.screens.SurvivalGuide = { name = "Survival guide" }
 F.screens.ISPostDeathUI = { name = "You died" }
+-- The death screen shows its buttons only 3 seconds after you die (ISPostDeathUI.waitOver), and nothing moves the
+-- focus then, so they were never read: say them as they appear.
+local deathSaid = {}
+ZA.onTick(function()
+    if not ISPostDeathUI or not ISPostDeathUI.instance then return end
+    for i, ui in pairs(ISPostDeathUI.instance) do
+        if ui and ui:isVisible() and ui.waitOver and not deathSaid[ui] then
+            deathSaid[ui] = true
+            local parts = {}
+            for _, b in ipairs({ { ui.buttonRespawn, "{Cross}" }, { ui.buttonQuit, "{Circle}" }, { ui.buttonExit, "{Square}" } }) do
+                local btn, key = b[1], b[2]
+                if btn and btn:isVisible() then
+                    local title = btn.title or (btn.getTitle and btn:getTitle()) or ""
+                    if title ~= "" then table.insert(parts, key .. ": " .. ZA.clean(title)) end
+                end
+            end
+            ZA.say("You died. " .. table.concat(parts, ". "))
+        end
+    end
+end)
 F.screens.ISBackButtonWheel = { name = "{Share} menu" }
 local origName = F.screenName
 function F.screenName(panel)

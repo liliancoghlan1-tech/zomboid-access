@@ -589,6 +589,39 @@ end
 
 -- ---------- running them ----------
 
+-- A loaded save keeps the lesson's zombies, but not our list of them, so the lesson would spawn more on top: three
+-- of them can drag you down, which kills whatever your health (healing can't stop it). This world has no zombies
+-- of its own, so any left here are old lesson zombies: clear them before the lesson starts again.
+function TU.clearLeftovers()
+    local zl, gone = getCell():getZombieList(), {}
+    for i = 0, zl:size() - 1 do
+        local z = zl:get(i)
+        if z and not z:isDead() then table.insert(gone, z) end
+    end
+    for _, z in ipairs(gone) do pcall(function() z:removeFromWorld(); z:removeFromSquare() end) end
+    if #gone > 0 then print("[ZA] tutorial: cleared " .. #gone .. " zombies left from before") end
+    TU.spawned, TU.want = {}, nil
+end
+
+-- The fighting lessons after "weapon" need the bat in your hands: after a reload, or a new character after dying,
+-- they can be empty. Put it back (from your bags, or a new one).
+TU.armedSteps = { closeInv = true, zombieComing = true, lockOnSwitch = true, lockOnFight = true, escape = true }
+function TU.ensureWeapon()
+    local p = getPlayer()
+    if not p or p:getPrimaryHandItem() then return end
+    local inv = p:getInventory()
+    local bat = inv:getFirstTypeRecurse("Base.BaseballBat")
+    if bat and bat:getContainer() ~= inv then
+        bat:getContainer():Remove(bat)
+        inv:AddItem(bat)
+    end
+    bat = bat or inv:AddItem("Base.BaseballBat")
+    if not bat then return end
+    p:setPrimaryHandItem(bat)
+    if bat:isTwoHandWeapon() then p:setSecondaryHandItem(bat) end
+    ZA.queue("The bat is back in your hands.")
+end
+
 function TU.enter(i)
     local st = state()
     st.step = i
@@ -596,6 +629,10 @@ function TU.enter(i)
     TU.stepAt, TU.hinted, TU.doneAt = getTimestampMs(), nil, nil
     local s = TU.steps[i]
     if not s then return end
+    if TU.armedSteps[s.line] then
+        local ok, err = pcall(TU.ensureWeapon)
+        if not ok then print("[ZA] tutorial weapon error: " .. tostring(err)) end
+    end
     if s.setup then
         local ok, err = pcall(s.setup)
         if not ok then print("[ZA] tutorial setup error, step " .. i .. ": " .. tostring(err)) end
@@ -647,6 +684,7 @@ function TU.tick()
         if st.stepKey then
             for i, s2 in ipairs(TU.steps) do if s2.line == st.stepKey then st.step = i; break end end
         end
+        pcall(TU.clearLeftovers)
         TU.enter(st.step)
         return
     end
@@ -760,3 +798,10 @@ table.insert(S.builders, function(lists)
         action = function() TU.chooseLesson() end,
     })
 end)
+
+-- A new character after dying here carries on with the lesson you were in: start it again as a loaded save does
+-- (old zombies cleared, the bat back in your hands for the fighting lessons).
+if not TU.newPlayerHooked then
+    TU.newPlayerHooked = true
+    Events.OnCreatePlayer.Add(function() TU.stepAt = nil end)
+end
