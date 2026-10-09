@@ -71,6 +71,12 @@ function F.describeBare(ui)
         return ZA.clean(title) .. ", button", ""
     elseif t == "ISLabel" then
         return ZA.clean(ui.name or ui:getName() or ""), ""
+    elseif t == "ISTickBox" and #(ui.options or {}) > 1 then
+        -- Several boxes in one control (Single Context Menu: Player 1 to 4): Up and Down move between the boxes
+        -- first, and only past the last (or first) one to the next row, so say the box the cursor is on.
+        local n, i = #ui.options, ui.joypadIndex or 1
+        local v = str(ui.options[i]) .. (ui.selected[i] and ", checked" or ", not checked") .. ", " .. i .. " of " .. n
+        return v .. ". Up and Down move between the " .. n .. " boxes, then on; Cross ticks or unticks", v
     elseif t == "ISTickBox" then
         local parts = {}
         for i, o in ipairs(ui.options or {}) do
