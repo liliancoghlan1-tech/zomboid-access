@@ -1,5 +1,5 @@
 -- Zomboid Access: core.
--- Speech: every line goes to Zomboid/Lua/ZomboidAccess_speech.txt, which our NVDA add-on reads aloud.
+-- Speech: every line goes to Zomboid/Lua/ZomboidAccess_speech.txt, which our speech bridge reads aloud.
 --   "S<tab>text" = say now (interrupts), "Q<tab>text" = say after what is already speaking,
 --   "G<tab>text" = the tutorial guide (protected), "U<tab>text" = urgent (see ZA.say below).
 -- Every line is also printed to console.txt with a [ZA] tag, so a test can read what was said.
@@ -87,7 +87,7 @@ function ZA.repeatLast()
     if ZA.last then lastText = nil; ZA.say(ZA.last) end
 end
 
--- Start each session with an empty speech file, so the add-on never replays old lines.
+-- Start each session with an empty speech file, so the bridge never replays old lines.
 do
     local w = getFileWriter(ZA.speechFile, true, false)
     if w then w:write(""); w:close() end

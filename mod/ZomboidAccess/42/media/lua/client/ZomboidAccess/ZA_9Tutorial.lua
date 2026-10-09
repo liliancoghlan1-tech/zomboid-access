@@ -65,6 +65,35 @@ if not TU.registered then
     Events.OnChallengeQuery.Add(C.Add)
 end
 
+-- The game's own TUTORIAL (main menu, or the first-launch "play the tutorial?" box) clears the mod list and
+-- reloads Lua without mods (MainScreen.startTutorial), so this mod would go silent for the whole tutorial.
+-- Every way into it calls MainScreen.startTutorial, so start ours instead, the way NewGameScreen:clickPlay
+-- starts a challenge.
+function TU.startFromMainMenu()
+    local ms = MainScreen and MainScreen.instance
+    if not ms or not ms.soloScreen then return false end
+    ZA.say("The game's own tutorial turns all mods off, so Zomboid Access would go silent. "
+        .. "Starting the Zomboid Access Tutorial instead.")
+    ActiveMods.getById("currentGame"):copyFrom(ActiveMods.getById("default"))
+    local ng = ms.soloScreen
+    ng:setVisible(true, JoypadState.getMainMenuJoypad())
+    C.name = C.name or "Zomboid Access Tutorial"
+    ng.selectedItem = { data = { mode = C.name, challenge = C } }
+    ng:clickPlay()
+    return true
+end
+
+if MainScreen and MainScreen.startTutorial and not TU.wrappedStart then
+    TU.wrappedStart = true
+    local orig = MainScreen.startTutorial
+    MainScreen.startTutorial = function(...)
+        local ok, started = pcall(TU.startFromMainMenu)
+        if ok and started then return end
+        if not ok then print("[ZA] tutorial redirect failed: " .. tostring(started)) end
+        return orig(...)
+    end
+end
+
 -- ---------- state ----------
 
 local function state()

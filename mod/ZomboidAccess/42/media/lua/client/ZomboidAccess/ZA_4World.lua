@@ -1,7 +1,7 @@
 -- Zomboid Access: starting a game, and arriving in the world.
 -- While the world loads, and on the "press to start" screen after it, the game runs no Lua at all:
--- so the loading message is said as the game starts loading, and the NVDA add-on watches the
--- game's log for the end of loading (it says "The world has loaded...").
+-- so the loading message is said as the game starts loading, and the speech bridge watches the
+-- game's log for the rest ("Still loading the world", "The world has loaded...").
 
 local F = ZA.F
 

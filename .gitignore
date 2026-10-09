@@ -1,2 +1,6 @@
 __pycache__/
 *.pyc
+bridge/.venv/
+bridge/build/
+bridge/bridge.log
+installer/files/
