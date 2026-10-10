@@ -94,4 +94,14 @@ end
 if not TS.ticking then
     TS.ticking = true
     ZA.onTick(TS.tick)
+    -- F7 here: the panel's prompt, the keys, and the button you're on
+    local origRepeat = F.repeatHint
+    function F.repeatHint()
+        local p = panel()
+        if not p then return origRepeat() end
+        ZA.say(F.screens.ISTermsOfServiceUI.name .. ". " .. getText("UI_TermsOfService_Prompt1"))
+        ZA.queue("Keyboard: Up and Down move between the buttons, Enter presses one. Controller: press {Cross} first, then the D-pad and {Cross}.")
+        ZA.queue(buttonWords(p, TS.index))
+        return true
+    end
 end

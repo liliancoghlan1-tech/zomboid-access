@@ -25,10 +25,12 @@ local function inWorld(c)
     return jd and jd.player ~= nil and jd.focus == nil and S.inWorld() and not jd.isDoingNavigation
 end
 
+P.layerHelp = "D-pad up and down: things. Left and right: categories. {Triangle}: again, hold for guide. {Square}: walk there, hold to use it. {Circle}: scanner off."
+
 function P.setLayer(on)
     P.layer = on
     if on then
-        ZA.say("Scanner on. D-pad up and down: things. Left and right: categories. {Triangle}: again, hold for guide. {Square}: walk there, hold to use it. {Circle}: scanner off.")
+        ZA.say("Scanner on. " .. P.layerHelp)
     else
         ZA.say("Scanner off.")
     end
@@ -143,6 +145,52 @@ if not P.ticking then
             P.setLayer(not P.layer)
         end
     end)
+end
+
+-- F7 in the world with no window open (ZA_1Focus.lua): what the buttons do here. In the driver's seat, driving;
+-- as a passenger, getting out; on foot, the scanner if it's on, else how to start it and the game's own buttons.
+function P.worldHelp()
+    local p = getPlayer()
+    local v = p and p:getVehicle()
+    local parts = {}
+    local r = ZA.RT and ZA.RT.route
+    if v and v:isDriver(p) then
+        table.insert(parts, "Driving. {R2} accelerates, {L2} reverses, {Circle} brakes, the left stick steers. A low blip: steer left, a high blip: steer right")
+        if r and r.mode == "auto" then
+            table.insert(parts, "Autodrive is on: brake with {Circle} and the car is yours again")
+        elseif r then
+            table.insert(parts, "Route guidance is on: with the scanner on, {Square} stops it")
+        end
+        if P.layer then
+            table.insert(parts, "Scanner on. " .. P.layerHelp)
+            if not r then table.insert(parts, "Pick a place: {Square} for route guidance, hold {Square} to drive there by itself") end
+            table.insert(parts, "With the scanner off: hold D-pad up for the car's menu, and cruise control is hold {Square} with D-pad up or down, tap {Square} for on or off")
+        else
+            table.insert(parts, "Hold D-pad up: the car's menu, to start the engine, headlights, or get out. Cruise control: hold {Square} and press D-pad up or down to set the speed, tap {Square} to switch it on or off")
+            if not r then table.insert(parts, "Tap {Share} for the scanner, then pick a place to drive to") end
+        end
+    elseif v then
+        table.insert(parts, "You're a passenger. {Cross} gets out")
+        table.insert(parts, P.layer and ("Scanner on. " .. P.layerHelp) or "Tap {Share}: scanner on")
+    elseif P.layer then
+        table.insert(parts, "Scanner on. " .. P.layerHelp)
+    else
+        table.insert(parts, "Scanner off. Tap {Share}: scanner on. Tap {Share} twice: quick status")
+        table.insert(parts, "The left stick walks, the right stick aims, {R2} attacks, {L2} shoves, {Cross} interacts, {Triangle} opens your inventory")
+    end
+    for i, t in ipairs(parts) do parts[i] = t:gsub("[%.%s]+$", "") end
+    ZA.say(table.concat(parts, ". ") .. ".")
+end
+
+if not P.helpWrapped then
+    P.helpWrapped = true
+    local origRepeat = ZA.F.repeatHint
+    function ZA.F.repeatHint()
+        if origRepeat() then return true end
+        if not S.inWorld() then return false end
+        run(P.worldHelp)
+        return true
+    end
 end
 
 -- A new world or a load starts with the layer off, so the D-pad does what the game expects.

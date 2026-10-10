@@ -107,7 +107,7 @@ F.screens.CharacterCreationProfessionListBox = {
         local a, _, s = areaOf(panel)
         if not a then return nil end
         local parts = {}
-        if s ~= lastScreen then
+        if s ~= lastScreen or F.fullIntro then
             lastScreen = s
             table.insert(parts, "Occupation and traits")
             table.insert(parts, pointsWords(points(s)))
@@ -157,6 +157,20 @@ local function switch(jd, dir)
         end
     end
     return false
+end
+
+-- Moving in the occupations list already chooses (the game's own Up and Down do), so Cross changes nothing and
+-- the game says nothing: confirm it.
+if CharacterCreationProfessionListBox and not CC.wrappedDown then
+    CC.wrappedDown = true
+    local origDown = CharacterCreationProfessionListBox.onJoypadDown
+    function CharacterCreationProfessionListBox:onJoypadDown(button, joypadData)
+        origDown(self, button, joypadData)
+        local a, _, s = areaOf(self)
+        if button == Joypad.AButton and a and a.field == "listboxProf" and s.profession then
+            ZA.say(ZA.clean(s.profession:getUIName()) .. " selected")
+        end
+    end
 end
 
 local origRelease = JoypadControllerData.onReleaseButton

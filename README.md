@@ -95,6 +95,7 @@ Keyboard
 - Delete: use it.
 - Insert: quick status. With the inventory open: details of the selected item.
 - Shift and Insert: where you are.
+- F7: help for where you are. In a menu or window: the screen's hint again (where you are and what the buttons do), then what is selected. In the world: in the driver's seat, how to drive (and the route or autodrive if one is on); as a passenger, how to get out; on foot, the scanner's buttons if it's on, else how to turn it on and the game's own buttons.
 Left Ctrl also works instead of Shift, but left Ctrl is the game's Aim key, so Shift is better.
 
 
