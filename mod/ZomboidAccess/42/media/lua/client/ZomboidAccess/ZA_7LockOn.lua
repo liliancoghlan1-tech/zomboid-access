@@ -4,8 +4,8 @@
 --   right" when it picks one, "Lock-on free" when there's none left.
 --   It never turns you while you walk (left stick), and pushing the right stick to aim somewhere else wins over it.
 --   While it faces a zombie (standing still) it also keeps you aiming at it, so pulling R2 all the way swings at
---   once. That is what makes it work with controllers whose triggers are only on or off (8BitDo and others): the
---   game swings only while you aim, and such a trigger can't be pulled halfway to aim first. L2 shoves.
+--   once, on any controller: the game swings from R2 only while the right stick aims (a light R2 pull is only
+--   precision aim), and lock-on leaves the right stick free. L2 shoves.
 -- The choice is kept in the save (ModData "ZomboidAccessSettings").
 
 ZA.LK = ZA.LK or {}
@@ -98,8 +98,8 @@ local function rtPressed(bind)
     return pressed
 end
 
--- The game swings from R2 only while the right stick is pushed (a held aim isn't enough; found with an 8BitDo
--- controller, whose triggers are only on or off). So with lock-on holding the aim, an R2 press starts the swing
+-- The game swings from R2 only while the right stick is pushed (its Aim binding; a held aim isn't enough, on any
+-- controller: the triggers are analog, R2 only past 0.93). So with lock-on holding the aim, an R2 press starts the swing
 -- itself (AttemptAttack, the game's own). It needs the weapon raised (isWeaponReady), which can take a moment
 -- after the aim is taken: keep trying for 0.6 seconds. If the game started the swing (stick pushed too), leave it.
 local function swing(p)
