@@ -24,7 +24,7 @@ using Microsoft.Win32;
 
 [assembly: System.Reflection.AssemblyTitle("Zomboid Access Setup")]
 [assembly: System.Reflection.AssemblyProduct("Zomboid Access")]
-[assembly: System.Reflection.AssemblyVersion("0.9.3.0")]
+// The version (AssemblyVersion) is the mod's, from mod.info: build.ps1 adds it.
 
 namespace ZomboidAccessSetup
 {
@@ -390,15 +390,22 @@ namespace ZomboidAccessSetup
         // or when it is as new as GitHub's (no download needed).
         public static Release Beside()
         {
-            var here = Path.GetDirectoryName(Application.ExecutablePath);
-            var pkg = FindPackage(here);
+            var pkg = FindPackage(Path.GetDirectoryName(Application.ExecutablePath));
             if (pkg == null) return null;
+            var rel = FromPackage(pkg);
+            if (rel != null) rel.Name = "Zomboid Access " + rel.Version + " (the copy in this folder)";
+            return rel;
+        }
+
+        // An unpacked release, by the version in its mod.info.
+        public static Release FromPackage(string pkg)
+        {
             var info = Path.Combine(pkg, "files", "mods", Places.ModId, "42", "mod.info");
             string v = null;
             try { foreach (var l in File.ReadAllLines(info)) if (l.StartsWith("modversion=")) v = l.Substring(11).Trim(); }
             catch (Exception) { }
             if (v == null) return null;
-            return new Release { Tag = "v" + v, Name = "Zomboid Access " + v + " (the copy in this folder)", Notes = "", LocalFolder = pkg };
+            return new Release { Tag = "v" + v, Name = "Zomboid Access " + v, Notes = "", LocalFolder = pkg };
         }
     }
 
@@ -415,7 +422,7 @@ namespace ZomboidAccessSetup
                 return Convert.ToBase64String(sha.ComputeHash(s));
         }
 
-        static bool SameFile(string a, string b)
+        public static bool SameFile(string a, string b)
         {
             var fa = new FileInfo(a); var fb = new FileInfo(b);
             if (!fb.Exists || fa.Length != fb.Length) return false;
@@ -517,7 +524,8 @@ namespace ZomboidAccessSetup
                 else Notes.Add("This release has no speech bridge (it is older than 0.9.3 and uses an NVDA add-on): install that from the release's folder.");
 
                 var setupFrom = Path.Combine(pkg, "ZomboidAccessSetup.exe");
-                KeepSetup(File.Exists(setupFrom) ? setupFrom : Application.ExecutablePath);
+                var kept = KeepSetup(File.Exists(setupFrom) ? setupFrom : Application.ExecutablePath);
+                if (kept != null) Notes.Add("Couldn't keep a copy of this setup for updates: " + kept);
 
                 if (Directory.Exists(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "nvda", "addons", "zomboidAccess")))
                     Notes.Add("The old Zomboid Access NVDA add-on is still installed. Remove it, or everything is said twice: NVDA menu, Tools, Add-on store, Installed add-ons, Zomboid Access, Remove.");
@@ -596,13 +604,15 @@ namespace ZomboidAccessSetup
         }
 
         // This program, next to the bridge, with a Start menu entry: run it again for updates.
-        void KeepSetup(string from)
+        // Returns what went wrong, or null.
+        public static string KeepSetup(string from)
         {
             try
             {
                 Directory.CreateDirectory(Places.Home);
                 var to = Places.SetupCopy;
-                if (!string.Equals(Path.GetFullPath(from), Path.GetFullPath(to), StringComparison.OrdinalIgnoreCase))
+                if (!string.Equals(Path.GetFullPath(from), Path.GetFullPath(to), StringComparison.OrdinalIgnoreCase)
+                    && !(File.Exists(to) && Sync.SameFile(from, to)))
                 {
                     // A running program can't be overwritten, but it can be renamed out of the way.
                     if (File.Exists(to) && string.Equals(Path.GetFullPath(Application.ExecutablePath), Path.GetFullPath(to), StringComparison.OrdinalIgnoreCase))
@@ -614,8 +624,30 @@ namespace ZomboidAccessSetup
                     File.Copy(from, to, true);
                 }
                 Shortcut(Places.StartMenuLink, to);
+                return null;
             }
-            catch (Exception e) { Notes.Add("Couldn't keep a copy of this setup for updates: " + e.Message); }
+            catch (Exception e) { return e.Message; }
+        }
+
+        // The downloaded release comes with a newer Zomboid Access Setup than this one: hand the work over to it, so
+        // the install is done by the new release's own setup, and the copy kept for updates is the new one.
+        // Returns false (keep going here) if the release's setup isn't newer or can't be started.
+        public static bool HandOver(string what, string pkg, string temp, string notes)
+        {
+            var theirs = Path.Combine(pkg, "ZomboidAccessSetup.exe");
+            try
+            {
+                if (!File.Exists(theirs)) return false;
+                var mine = typeof(Installer).Assembly.GetName().Version;
+                if (System.Reflection.AssemblyName.GetAssemblyName(theirs).Version <= mine) return false;
+                File.WriteAllText(Path.Combine(temp, "notes.txt"), notes ?? "", new UTF8Encoding(false));
+                // Started from where it is kept for updates, so the window that stays open is the lasting copy.
+                var run = KeepSetup(theirs) == null ? Places.SetupCopy : theirs;
+                Process.Start(new ProcessStartInfo(run,
+                    "--continue " + what + " \"" + pkg + "\" \"" + temp + "\" " + Process.GetCurrentProcess().Id) { UseShellExecute = false });
+                return true;
+            }
+            catch (Exception) { return false; }
         }
 
         static void Shortcut(string link, string target)
@@ -702,8 +734,12 @@ namespace ZomboidAccessSetup
         readonly Button main, reinstall, uninstall, close;
         Release newest;
         string installed;
+        // Set when an older setup handed its work over to this one: what to do, and its download to clean up.
+        readonly string carryOn, carryTemp;
 
-        public MainForm()
+        public MainForm() : this(null, null, null) { }
+
+        public MainForm(string what, string pkg, string temp)
         {
             Text = "Zomboid Access Setup";
             Font = new Font("Segoe UI", 10f);
@@ -740,7 +776,24 @@ namespace ZomboidAccessSetup
             reinstall.Click += (s, e) => Run("reinstall");
             uninstall.Click += (s, e) => Run("uninstall");
             close.Click += (s, e) => Close();
-            Shown += (s, e) => { status.Focus(); Check(); };
+            if (what != null)
+            {
+                carryOn = what; carryTemp = temp;
+                newest = Release.FromPackage(pkg);
+                try { if (newest != null) newest.Notes = File.ReadAllText(Path.Combine(temp, "notes.txt")); } catch (Exception) { }
+                FormClosed += (s, e) => { try { Directory.Delete(carryTemp, true); } catch (Exception) { } };
+            }
+            Shown += (s, e) =>
+            {
+                status.Focus();
+                if (carryOn != null && newest != null)
+                {
+                    installed = Places.InstalledVersion();
+                    notes.Text = Plain(newest.Notes);
+                    Run(carryOn);
+                }
+                else Check();
+            };
         }
 
         void Say(string text)
@@ -831,13 +884,30 @@ namespace ZomboidAccessSetup
             var inst = new Installer(Say);
             new Thread(() =>
             {
-                string error = null;
+                string error = null, temp = null;
                 try
                 {
                     if (what == "uninstall") inst.Uninstall();
-                    else inst.Install(newest, what == "reinstall");
+                    else if (newest.LocalFolder != null) inst.Install(newest, what == "reinstall");
+                    else
+                    {
+                        temp = Path.Combine(Path.GetTempPath(), "ZomboidAccessSetup-" + Guid.NewGuid().ToString("N"));
+                        Directory.CreateDirectory(temp);
+                        var pkg = newest.Fetch(temp, Say);
+                        if (Installer.HandOver(what, pkg, temp, newest.Notes))
+                        {
+                            Say("This version comes with a newer Zomboid Access Setup. It opens in a moment and finishes the " + (what == "update" ? "update" : what) + ".");
+                            temp = null;   // the new setup removes it
+                            BeginInvoke(new Action(() => Application.Exit()));
+                            return;
+                        }
+                        var local = Release.FromPackage(pkg) ?? newest;
+                        local.LocalFolder = pkg;
+                        inst.Install(local, what == "reinstall");
+                    }
                 }
                 catch (Exception e) { error = e.Message; }
+                finally { if (temp != null) try { Directory.Delete(temp, true); } catch (Exception) { } }
                 BeginInvoke(new Action(() => Done(what, inst, error)));
             }) { IsBackground = true }.Start();
         }
@@ -860,13 +930,23 @@ namespace ZomboidAccessSetup
     static class Program
     {
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
+            // Started by an older setup to finish its work: --continue <install|update|reinstall> <release folder>
+            // <download folder> <its process id>. Waits for it to close first.
+            string what = null, pkg = null, temp = null;
+            if (args.Length == 5 && args[0] == "--continue")
+            {
+                what = args[1]; pkg = args[2]; temp = args[3];
+                int pid;
+                if (int.TryParse(args[4], out pid))
+                    try { using (var p = Process.GetProcessById(pid)) p.WaitForExit(15000); } catch (Exception) { }
+            }
             // An older copy of this program renamed out of the way while updating itself.
             try { var old = Places.SetupCopy + ".old"; if (File.Exists(old)) File.Delete(old); } catch (Exception) { }
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
-            Application.Run(new MainForm());
+            Application.Run(what != null && Directory.Exists(pkg) ? new MainForm(what, pkg, temp) : new MainForm());
         }
     }
 }
