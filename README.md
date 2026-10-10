@@ -35,7 +35,7 @@ Installing, updating and removing
 3. Start Project Zomboid. If the Terms of Service screen comes up, it is read out: Up and Down move between its buttons, Enter presses one (it starts on Accept). With a controller, press Cross first, then the D-pad and Cross.
    Then the main menu says "Press Cross on your controller to start": press Cross and it reads the menu. If it says "No controller found", connect one and press Cross.
 
-Updating: run "Zomboid Access Setup" from the Start menu. When there is a newer version it says so, shows its release notes, and asks: Update replaces only the files that changed and removes ones the new version no longer has. Your voice settings, your other options and your saves are kept.
+Updating: run "Zomboid Access Setup" from the Start menu. When there is a newer version it says so, shows its release notes, and asks: Update replaces only the files that changed and removes ones the new version no longer has. Your voice settings, your other options and your saves are kept. If the new version comes with a newer Zomboid Access Setup, Setup closes and the new one opens by itself to finish the update, and from then on the Start menu entry opens the new one: you never download Setup again.
 Reinstall copies every file again, if something seems broken. Uninstall removes the mod, the speech bridge (with its voice settings) and its launch option; your saves are kept.
 
 The game mod writes what to say into a file (Zomboid\Lua\ZomboidAccess_speech.txt), and the speech bridge reads it out through your screen reader, using Prism (https://github.com/ethindp/prism). Both are needed. The file stays small (it starts again past 256 KB) and the bridge deletes it when the game closes. The bridge reads only that file and the game's log; it doesn't use the network. While the game starts, while a world loads, and on the "press to start" screen, the game runs no mod code at all, so the bridge watches the game's log and says what's happening itself.
@@ -95,6 +95,7 @@ Keyboard
 - Delete: use it.
 - Insert: quick status. With the inventory open: details of the selected item.
 - Shift and Insert: where you are.
+- F7: help for where you are. In a menu or window: the screen's hint again (where you are and what the buttons do), then what is selected. In the world: in the driver's seat, how to drive (and the route or autodrive if one is on); as a passenger, how to get out; on foot, the scanner's buttons if it's on, else how to turn it on and the game's own buttons.
 Left Ctrl also works instead of Shift, but left Ctrl is the game's Aim key, so Shift is better.
 
 

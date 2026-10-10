@@ -29,7 +29,11 @@ function AP.summary()
     local desc = MainScreen.instance and MainScreen.instance.desc
     if not desc then return "" end
     local parts = {}
-    local name = ZA.clean((desc:getForename() or "") .. " " .. (desc:getSurname() or ""))
+    -- The game copies the name boxes into desc only when the game starts, so a typed name is in the boxes.
+    local m = main()
+    local fore = m and m.forenameEntry and m.forenameEntry:getText() or desc:getForename()
+    local sur = m and m.surnameEntry and m.surnameEntry:getText() or desc:getSurname()
+    local name = ZA.clean((fore or "") .. " " .. (sur or ""))
     table.insert(parts, name .. ", " .. (desc:isFemale() and "a woman" or "a man"))
     local cp = MainScreen.instance.charCreationProfession
     if cp and cp.profession then

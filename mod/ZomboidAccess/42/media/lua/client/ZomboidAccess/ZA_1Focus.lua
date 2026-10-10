@@ -253,3 +253,28 @@ function F.poll()
 end
 
 ZA.onTick(F.poll)
+
+-- F7 (the game leaves it free, in menus and in the world): the screen's hint again (where you are, what the
+-- buttons do), then what is selected. Read by polling the key, since key events don't reach the main menu.
+-- Other places wrap F.repeatHint and return true when they answered: the Terms of Service (ZA_1Terms.lua), and
+-- the world with no window open, where the scanner or the car is explained (ZA_8Pad.lua).
+function F.repeatHint()
+    local jd = ZA.joypad()
+    local panel = jd and jd.focus
+    if not panel then return false end
+    F.fullIntro = true
+    local ok, intro = pcall(F.screenIntro, panel)
+    F.fullIntro = nil
+    if ok and intro ~= "" then ZA.say(intro) end
+    local _, words = F.current(panel)
+    if words ~= "" then ZA.queue(words) end
+    return true
+end
+
+local f7Down = false
+ZA.onTick(function()
+    local down = isKeyDown(Keyboard.KEY_F7)
+    local pressed = down and not f7Down
+    f7Down = down
+    if pressed then F.repeatHint() end
+end)
