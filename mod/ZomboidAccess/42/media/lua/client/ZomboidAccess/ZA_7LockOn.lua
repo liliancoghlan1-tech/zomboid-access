@@ -6,7 +6,7 @@
 --   While it faces a zombie (standing still) it also keeps you aiming at it, so pulling R2 all the way swings at
 --   once, on any controller: the game swings from R2 only while the right stick aims (a light R2 pull is only
 --   precision aim), and lock-on leaves the right stick free. L2 shoves.
--- The choice is kept in the save (ModData "ZomboidAccessSettings").
+-- The choice is kept in the save (ModData "ZomboidAccessSettings"); on until switched off.
 
 ZA.LK = ZA.LK or {}
 local LK = ZA.LK
@@ -19,12 +19,92 @@ local function settings()
     local ok, t = pcall(function() return ModData.getOrCreate("ZomboidAccessSettings") end)
     return ok and t or {}
 end
-function LK.isOn() return settings().lockOn == true end
+-- On unless switched off (Marc, 2026-10-19: on from the start of every game). Not in the tutorial, whose lesson
+-- teaches switching it on, and whose first fight comes before that lesson.
+function LK.isOn()
+    local v = settings().lockOn
+    if v == nil then return not (ZA.TU and ZA.TU.active and ZA.TU.active()) end
+    return v == true
+end
 
 local function dist(p, z) return math.sqrt((z:getX() - p:getX()) ^ 2 + (z:getY() - p:getY()) ^ 2) end
 
+-- A zombie you could hit: not one pretending to be dead (the game never takes it as a target), and not one behind
+-- a wall, a closed door or a blocked window (the game won't swing through those: LosUtil, as CombatManager does).
+local function inSight(p, z)
+    local ok, res = pcall(function()
+        return LosUtil.lineClear(getCell(), math.floor(p:getX()), math.floor(p:getY()), math.floor(p:getZ()),
+            math.floor(z:getX()), math.floor(z:getY()), math.floor(z:getZ()), false)
+    end)
+    if not ok or res == nil then return true end
+    local r = tostring(res)
+    return r ~= "Blocked" and r ~= "ClearThroughClosedDoor"
+end
+
 local function usable(p, z)
-    return z and not z:isDead() and z:getCurrentSquare() ~= nil and math.floor(z:getZ()) == math.floor(p:getZ())
+    if not (z and not z:isDead() and z:getCurrentSquare() ~= nil and math.floor(z:getZ()) == math.floor(p:getZ())) then
+        return false
+    end
+    local fake = false
+    pcall(function() fake = z:isFakeDead() end)
+    return not fake and inSight(p, z)
+end
+
+-- ---------- a zombie on the ground ----------
+-- On the ground it's the stomp (L2): the game aims a stomp at the ground only when the zombie's nearest body part is
+-- under 0.6 metres (CombatManager.calculateAttackVars). Lock-on holds no aim and swings nothing at a zombie on the
+-- ground (see proneGuide).
+LK.stompAt = 0.6 + 0.5  -- stomp distance from its middle, when its skeleton can't be read
+
+local function prone(z)
+    local down = false
+    pcall(function() down = z:isProne() or z:isOnFloor() end)
+    return down
+end
+
+-- Says where a zombie on the ground is and what to do: "Down, get closer: 2 metres right", then "Right on it: L2
+-- stomps". Each said when it changes (the distance again when it changes by a metre). Returns false: no swing.
+local function proneGuide(p, t, fresh)
+    -- ZA_7HeadStomp is taking you to its head, or has: it does the talking, and from its head you can strike
+    if ZA.HS and ZA.HS.handles and ZA.HS.handles(t) then
+        LK.proneState = nil
+        return false
+    end
+    -- about to be taken over (it waits for the body to lie flat first): work out the reach, but say nothing
+    local quiet = ZA.HS and ZA.HS.wants and ZA.HS.wants(p, t)
+    local d = dist(p, t)
+    -- On the ground it's the stomp (L2), from close by: the game stomps on the ground only when the zombie's
+    -- nearest part is under 0.6 m (CombatManager.calculateAttackVars), measured here on its skeleton as the game
+    -- does (ZA_7HeadStomp's boneDist: head, spine, calves, feet), else from its middle with a body's allowance.
+    -- No swing with R2 any more on the ground (2026-10-19, in game: R2 at a zombie on the ground with the aim held
+    -- left the character stuck in its swing, unable to move).
+    local near = nil
+    local now0 = getTimestampMs()
+    if LK.nearFor == t and now0 < (LK.nearUntil or 0) then
+        near = LK.near
+    elseif ZA.HS and ZA.HS.boneDist then
+        for _, b in ipairs({ 6, 3, 21, 25, 22, 26 }) do
+            local v = ZA.HS.boneDist(p, t, b)
+            if v and (not near or v < near) then near = v end
+        end
+        LK.near, LK.nearFor, LK.nearUntil = near, t, now0 + 150   -- measured at most every 0.15 s
+    end
+    -- a little slack to leave "close" once there, so a zombie sliding on the floor doesn't flip it back and forth
+    local edge = (LK.proneState == "stomp") and 0.7 or 0.6
+    local close = near and near < edge or (not near and d <= LK.stompAt)
+    local state, canSwing
+    if close then state, canSwing = "stomp", false else state, canSwing = "far", false end
+    local m = math.floor(d + 0.5)
+    local now = getTimestampMs()
+    if quiet then return canSwing end
+    if state ~= LK.proneState or (state == "far" and m ~= LK.proneMetres and now - (LK.proneSaidAt or 0) > 1500) then
+        LK.proneState, LK.proneMetres, LK.proneSaidAt = state, m, now
+        -- just locked on: after "Locked on: ...", not over it
+        local say = fresh and ZA.queue or ZA.urgent
+        if state == "stomp" then say(ZA.tr("LockOn_ProneStomp"))
+        else say(ZA.tr("LockOn_ProneFar", (S.where(t:getX(), t:getY(), t:getZ())))) end
+    end
+    return canSwing
 end
 
 local function pick(p)
@@ -40,6 +120,24 @@ local function pick(p)
                 if not best or (chase and not bchase) or (chase == bchase and d < bd) then
                     best, bd, bchase = z, d, chase
                 end
+            end
+        end
+    end
+    return best
+end
+
+-- The zombie attacking you now (in its attack on you, IsoZombie:isZombieAttacking, as ZA_7Grabbed), the nearest
+-- if several, within reach of lock-on; nil if none.
+local function attacker(p)
+    local zl = getCell():getZombieList()
+    local best, bd
+    for i = 0, zl:size() - 1 do
+        local z = zl:get(i)
+        if usable(p, z) then
+            local d = dist(p, z)
+            if d <= LK.reach then
+                local ok, att = pcall(function() return z:isZombieAttacking(p) end)
+                if ok and att and (not best or d < bd) then best, bd = z, d end
             end
         end
     end
@@ -130,34 +228,57 @@ function LK.tick()
     if t and (not usable(p, t) or dist(p, t) > LK.keep) then
         t = nil
     end
+    -- a zombie attacking you (grabbing, biting) comes first, even over the one already locked on: otherwise you
+    -- would keep turning to the first and swinging at the wrong one (Marc, 2026-10-18)
+    local att = attacker(p)
+    if att then t = att end
     if not t then t = pick(p) end
-    if t ~= LK.target then
+    local fresh = t ~= LK.target
+    if fresh then
         if t then
-            ZA.urgent("Locked on: " .. S.threatText(t))
+            -- switched to a zombie grabbing you: after "Grabbed: L2 shoves it off" (ZA_7Grabbed), not over it
+            local say = (t == att) and ZA.queue or ZA.urgent
+            say(ZA.tr("LockOn_Locked", S.threatText(t)))
         elseif LK.target then
-            ZA.say("Lock-on free")
+            ZA.say(ZA.tr("LockOn_Free"))
         end
         LK.target = t
     end
-    if not t then hold(p, false); return end
+    if not t then hold(p, false); LK.proneState = nil; return end
     local bind = pad(p)
     local pressed = bind and rtPressed(bind)
+    -- on the ground: guide you to it (also while you walk up to it), and don't swing at the air from too far
+    local down = prone(t)
+    local canSwing = true
+    if down then canSwing = proneGuide(p, t, fresh) else LK.proneState = nil end
     local moving = false
     pcall(function() moving = p:isPlayerMoving() end)
     if moving or p:isPerformingAnAction() or manualAim(p, t, bind) then hold(p, false); return end
+    if pressed and not canSwing then
+        pressed = false
+        local now = getTimestampMs()
+        if now - (LK.tooFarAt or 0) > 1500 then
+            LK.tooFarAt = now
+            -- on the ground and close enough: it's L2 that stomps; else still too far
+            local placed = ZA.HS and ZA.HS.handles and ZA.HS.handles(t) and ZA.HS.phase == "placed"
+            ZA.urgent(ZA.tr((LK.proneState == "stomp" or placed) and "LockOn_ProneStomp" or "LockOn_TooFar"))
+        end
+    end
     -- Bitten or hit: the game drops your aim and won't let you swing until it's over. A shove breaks a grab.
     local hit = false
     pcall(function() local h = p:getHitReaction(); hit = h ~= nil and h ~= "" end)
-    if hit then
-        local now = getTimestampMs()
-        if now - (LK.shoveSaid or 0) > 6000 then
-            LK.shoveSaid = now
-            ZA.urgent("It has hold of you: {L2} shoves it off, then {R2}.")
-        end
-        return
-    end
+    -- (the grab itself is announced, with its sound, by ZA_7Grabbed.lua, lock-on or not)
+    if hit then return end
     p:faceThisObject(t)
     if not bind then hold(p, false); return end
+    -- Out of reach on the ground, or being walked to its head: no aim held. With the aim held the game swings by
+    -- itself on R2, and those swings at the air cut the walk to the head (in game 2026-10-19: "Too far", then a
+    -- miss anyway, over and over, and the walk cut each time).
+    if not canSwing or (down and ZA.HS and ZA.HS.handles and ZA.HS.handles(t) and ZA.HS.phase ~= "placed") then
+        hold(p, false)
+        LK.swingUntil = nil
+        return
+    end
     hold(p, true)
     if pressed then LK.swingUntil = getTimestampMs() + 600 end
     swing(p)
@@ -174,18 +295,17 @@ end
 table.insert(S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
-        cat = "you", key = "you|lockon", noWhere = true, order = 903, baseName = "Lock-on",
+        cat = "you", key = "you|lockon", noWhere = true, order = 903, baseName = ZA.tr("LockOn_Name"),
         name = function()
             local on = LK.isOn()
-            return "Lock-on: " .. (on and "on" or "off") .. ". Faces and aims at the nearest zombie within reach while you "
-                .. "stand still: {R2} swings. {Square} turns it " .. (on and "off" or "on")
+            return ZA.tr(on and "LockOn_HelpOn" or "LockOn_HelpOff")
         end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()
             local s = settings()
-            s.lockOn = not (s.lockOn == true)
+            s.lockOn = not LK.isOn()
             LK.target = nil
-            ZA.say("Lock-on " .. (s.lockOn and "on" or "off") .. ".")
+            ZA.say(ZA.tr(s.lockOn and "LockOn_SwitchedOn" or "LockOn_SwitchedOff"))
         end,
     })
 end)

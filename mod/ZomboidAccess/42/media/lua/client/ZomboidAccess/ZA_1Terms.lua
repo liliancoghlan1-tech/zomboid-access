@@ -7,7 +7,7 @@ local F = ZA.F
 local TS = ZA.Terms or {}
 ZA.Terms = TS
 
-F.screens.ISTermsOfServiceUI = { name = "Terms of Service and Privacy Notice" }
+F.screens.ISTermsOfServiceUI = { name = ZA.tr("Terms_Name") }
 
 local function panel()
     local p = ISTermsOfServiceUI and ISTermsOfServiceUI.instance
@@ -22,7 +22,7 @@ end
 local function buttonWords(p, i)
     local b = buttons(p)[i]
     if not b then return "" end
-    return ZA.clean(b.title or "") .. ", button, " .. i .. " of 4"
+    return ZA.tr("Terms_ButtonWords", ZA.clean(b.title or ""), i)
 end
 
 -- a controller whose focus is on the panel (after Cross), so the pad's own moves are read too
@@ -56,7 +56,7 @@ function TS.tick()
         keys.up, keys.down, keys.enter = isKeyDown(Keyboard.KEY_UP), isKeyDown(Keyboard.KEY_DOWN), isKeyDown(Keyboard.KEY_RETURN)
         local text = getText("UI_TermsOfService_Prompt1")
         ZA.say(F.screens.ISTermsOfServiceUI.name .. ". " .. text)
-        ZA.queue("Keyboard: Up and Down move between the buttons, Enter presses one. Controller: press {Cross} first, then the D-pad and {Cross}.")
+        ZA.queue(ZA.tr("Terms_Keys"))
         ZA.queue(buttonWords(p, TS.index))
         ZA.log("[ZA] terms of service panel read")
         return
@@ -84,8 +84,8 @@ function TS.tick()
         local b = buttons(p)[TS.index]
         if b then
             ZA.log("[ZA] terms: pressing " .. tostring(b.title))
-            if b == p.buttonAccept then ZA.say("Accepted") end
-            if b == p.button1 or b == p.button2 then ZA.say("Opening the page in your web browser or the Steam overlay") end
+            if b == p.buttonAccept then ZA.say(ZA.tr("Terms_Accepted")) end
+            if b == p.button1 or b == p.button2 then ZA.say(ZA.tr("Terms_OpeningPage")) end
             b:forceClick()
         end
     end
@@ -100,7 +100,7 @@ if not TS.ticking then
         local p = panel()
         if not p then return origRepeat() end
         ZA.say(F.screens.ISTermsOfServiceUI.name .. ". " .. getText("UI_TermsOfService_Prompt1"))
-        ZA.queue("Keyboard: Up and Down move between the buttons, Enter presses one. Controller: press {Cross} first, then the D-pad and {Cross}.")
+        ZA.queue(ZA.tr("Terms_Keys"))
         ZA.queue(buttonWords(p, TS.index))
         return true
     end

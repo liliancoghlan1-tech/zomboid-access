@@ -11,16 +11,22 @@ local F = ZA.F
 -- ---------- names ----------
 
 local names = {
-    ISOvenUI = "Oven", ISMicrowaveUI = "Microwave", ISBBQInfoWindow = "Barbecue", ISCampingInfoWindow = "Campfire",
-    ISGeneratorInfoWindow = "Generator", ISAlarmClockDialog = "Alarm clock", ISSleepDialog = "Sleep",
-    ISFluidTransferUI = "Pour or transfer liquid", ISFluidInfoUI = "Liquid", ISAnimalUI = "Animal", ISHutchUI = "Hutch",
-    ISVehicleMechanics = "Vehicle mechanics", ISRadioWindow = "Radio", ISDigitalCode = "Code lock",
-    ISBombTimerDialog = "Timer", ISLiteratureUI = "Books and media you've read", ISFitnessUI = "Exercise",
-    ISMakeUpUI = "Make-up", ISGarmentUI = "Clothing details", ISSearchWindow = "Foraging search",
-    ISLightbarUI = "Lightbar and siren", ISVehicleSeatUI = "Seats", ISVehicleACUI = "Heater and air conditioning",
-    ISButcherHookUI = "Butcher hook", ISMediaInfo = "Media", ISHandcraftWindow = "Crafting", ISBuildWindow = "Building",
-    ISEntityWindow = "Workstation", ISFarmingInfo = "Plant", ISUIWriteJournal = "Writing", ISMapSymbolDialog = "Map symbol",
-    ISCharacterInfoWindow = "Character", ISModalRichText = "Message",
+    ISOvenUI = ZA.tr("Windows_Oven"), ISMicrowaveUI = ZA.tr("Windows_Microwave"), ISBBQInfoWindow = ZA.tr("Windows_Barbecue"),
+    ISCampingInfoWindow = ZA.tr("Windows_Campfire"), ISGeneratorInfoWindow = ZA.tr("Windows_Generator"),
+    ISAlarmClockDialog = ZA.tr("Windows_AlarmClock"), ISSleepDialog = ZA.tr("Windows_Sleep"),
+    ISFluidTransferUI = ZA.tr("Windows_FluidTransfer"), ISFluidInfoUI = ZA.tr("Windows_FluidInfo"),
+    ISAnimalUI = ZA.tr("Windows_Animal"), ISHutchUI = ZA.tr("Windows_Hutch"),
+    ISVehicleMechanics = ZA.tr("Windows_VehicleMechanics"), ISRadioWindow = ZA.tr("Windows_Radio"),
+    ISDigitalCode = ZA.tr("Windows_CodeLock"), ISBombTimerDialog = ZA.tr("Windows_Timer"),
+    ISLiteratureUI = ZA.tr("Windows_Literature"), ISFitnessUI = ZA.tr("Windows_Exercise"),
+    ISMakeUpUI = ZA.tr("Windows_MakeUp"), ISGarmentUI = ZA.tr("Windows_Garment"),
+    ISSearchWindow = ZA.tr("Windows_Foraging"), ISLightbarUI = ZA.tr("Windows_Lightbar"),
+    ISVehicleSeatUI = ZA.tr("Windows_Seats"), ISVehicleACUI = ZA.tr("Windows_HeaterAC"),
+    ISButcherHookUI = ZA.tr("Windows_ButcherHook"), ISMediaInfo = ZA.tr("Windows_Media"),
+    ISHandcraftWindow = ZA.tr("Windows_Crafting"), ISBuildWindow = ZA.tr("Windows_Building"),
+    ISEntityWindow = ZA.tr("Windows_Workstation"), ISFarmingInfo = ZA.tr("Windows_Plant"),
+    ISUIWriteJournal = ZA.tr("Windows_Writing"), ISMapSymbolDialog = ZA.tr("Windows_MapSymbol"),
+    ISCharacterInfoWindow = ZA.tr("Windows_Character"), ISModalRichText = ZA.tr("Windows_Message"),
 }
 ZA.windowNames = names
 
@@ -93,7 +99,7 @@ function F.screenIntro(panel)
         for _, l in ipairs(labelTexts(panel)) do table.insert(parts, l) end
     end
     local hints = F.buttonHints(panel)
-    if hints ~= "" then table.insert(parts, hints) else table.insert(parts, "{Circle} closes") end
+    if hints ~= "" then table.insert(parts, hints) else table.insert(parts, ZA.tr("Windows_Closes")) end
     for i, t in ipairs(parts) do parts[i] = t:gsub("[%.%s]+$", "") end
     return table.concat(parts, ". ")
 end
@@ -111,20 +117,20 @@ local function knobWords(k)
     local s
     if w and w.tempKnob == k then
         if w.Type == "ISOvenUI" and not getCore():isCelsius() then
-            s = (ovenF[k.selected] or v) .. " degrees Fahrenheit"
+            s = ZA.tr("Windows_DegF", ovenF[k.selected] or v)
         elseif w.Type == "ISOvenUI" then
-            s = v .. " degrees Celsius"
+            s = ZA.tr("Windows_DegC", v)
         else
             -- the microwave's dial is a power level: 50, 70, 90, 110, 130
-            s = "power " .. math.floor((v - 30) / 20 + 0.5) .. " of 5"
+            s = ZA.tr("Windows_Power", math.floor((v - 30) / 20 + 0.5))
         end
-        if v == 0 and w.Type == "ISOvenUI" then s = "off" end
+        if v == 0 and w.Type == "ISOvenUI" then s = ZA.tr("Windows_DialOff") end
     elseif w and w.timerKnob == k then
-        s = v == 0 and "no timer" or (v .. (v == 1 and " minute" or " minutes"))
+        s = v == 0 and ZA.tr("Windows_NoTimer") or (v == 1 and ZA.tr("Windows_Minute") or ZA.tr("Windows_Minutes", v))
     else
         s = tostring(v)
     end
-    return title .. ": " .. s .. ", dial, Up and Down turn it", title .. ": " .. s
+    return ZA.tr("Windows_KnobFull", title, s), ZA.tr("Windows_KnobShort", title, s)
 end
 
 local origBare = F.describeBare
@@ -141,20 +147,20 @@ local function stoveState(w)
     local parts = {}
     local powered = o:getContainer() and o:getContainer():isPowered()
     if not powered then
-        table.insert(parts, "No power: it won't turn on")
+        table.insert(parts, ZA.tr("Windows_NoPower"))
     else
-        table.insert(parts, o:Activated() and "On" or "Off")
+        table.insert(parts, o:Activated() and ZA.tr("Windows_StateOn") or ZA.tr("Windows_StateOff"))
     end
     local ok, cur = pcall(function() return o:getCurrentTemperature() end)
     if ok and cur and cur > 1 then
-        table.insert(parts, "warming: " .. math.floor(cur / math.max(1, o:getMaxTemperature()) * 100 + 0.5) .. " percent of the set heat")
+        table.insert(parts, ZA.tr("Windows_Warming", math.floor(cur / math.max(1, o:getMaxTemperature()) * 100 + 0.5)))
     end
     local c = o:getContainer()
     if c then
         local n = c:getItems():size()
-        table.insert(parts, n == 0 and "Empty" or (n .. (n == 1 and " thing inside" or " things inside")))
+        table.insert(parts, n == 0 and ZA.tr("Windows_StoveEmpty") or (n == 1 and ZA.tr("Windows_InsideOne") or ZA.tr("Windows_InsideMany", n)))
     end
-    table.insert(parts, "{Cross} turns it " .. (o:Activated() and "off" or "on") .. " from anywhere in this window. Left and Right move between the dials")
+    table.insert(parts, ZA.tr(o:Activated() and "Windows_StoveTurnOff" or "Windows_StoveTurnOn"))
     return table.concat(parts, ". ")
 end
 specials.ISOvenUI = stoveState
@@ -170,7 +176,7 @@ ZA.onTick(function()
                 local o = w.oven or w.microwave
                 if o then
                     local on = o:Activated()
-                    if lastOn[w] ~= nil and lastOn[w] ~= on then ZA.say(on and "Turned on" or "Turned off") end
+                    if lastOn[w] ~= nil and lastOn[w] ~= on then ZA.say(on and ZA.tr("Windows_TurnedOn") or ZA.tr("Windows_TurnedOff")) end
                     lastOn[w] = on
                 end
             end
@@ -203,24 +209,24 @@ local function partWords(part)
     local missing = false
     pcall(function() missing = part:getInventoryItem() == nil and part:getItemType() ~= nil and not part:getItemType():isEmpty() end)
     if missing then
-        table.insert(parts, "not installed")
+        table.insert(parts, ZA.tr("Windows_NotInstalled"))
     else
         local c = "?"
         pcall(function() c = tostring(part:getCondition()) end)
-        table.insert(parts, c .. " percent condition")
+        table.insert(parts, ZA.tr("Windows_PartCondition", c))
     end
     pcall(function()
         if part:isContainer() and part:getContainerContentType() then
             local cap = part:getContainerCapacity()
             if cap and cap > 0 then
-                table.insert(parts, math.floor(part:getContainerContentAmount() / cap * 100) .. " percent full")
+                table.insert(parts, ZA.tr("Windows_PartFull", math.floor(part:getContainerContentAmount() / cap * 100)))
             end
         end
     end)
     pcall(function()
         local it = part:getInventoryItem()
         if part:getId() == "Battery" and it then
-            table.insert(parts, math.floor(it:getCurrentUsesFloat() * 100) .. " percent charge")
+            table.insert(parts, ZA.tr("Windows_PartCharge", math.floor(it:getCurrentUsesFloat() * 100)))
         end
     end)
     return table.concat(parts, ", ")
@@ -232,18 +238,17 @@ F.readers.ISVehicleMechanics = function(w)
     local it = list and list.items and list.items[i]
     if not it then return w, "", "" end
     local d = it.item
-    local side = w.leftListHasFocus and "engine and insides" or "doors, body and lights"
+    local side = w.leftListHasFocus and ZA.tr("Windows_SideEngine") or ZA.tr("Windows_SideBody")
     if d.cat then
-        return it, ZA.clean(d.name or "") .. ", heading, " .. side .. ZA.pos(i, #list.items), ""
+        return it, ZA.tr("Windows_Heading", ZA.clean(d.name or ""), side) .. ZA.pos(i, #list.items), ""
     end
-    local words = ZA.clean(d.name or "") .. ", " .. partWords(d.part)
+    local words = ZA.tr("Windows_PartLine", ZA.clean(d.name or ""), partWords(d.part))
     return it, words .. ZA.pos(i, #list.items), ""
 end
 specials.ISVehicleMechanics = function(w)
-    local s = ""
     pcall(function() w:recalculGeneralCondition() end)
-    if w.generalCondition then s = "Overall condition " .. math.floor(w.generalCondition) .. " percent. " end
-    return s .. "Up and Down: the parts. Left: engine and insides. Right: doors, body and lights. {Cross}: what you can do with a part"
+    if w.generalCondition then return ZA.tr("Windows_MechIntroCond", math.floor(w.generalCondition)) end
+    return ZA.tr("Windows_MechIntro")
 end
 
 -- ---------- vehicle seats ----------
@@ -257,18 +262,18 @@ F.readers.ISVehicleSeatUI = function(w)
     local script = v:getScript()
     local id = script:getPassenger(seat):getId()
     local name = getTextOrNull("IGUI_Seat" .. id) or id
-    local parts = { name .. (seat == 0 and ", the driver's seat" or "") }
-    local status = "empty"
+    local parts = { seat == 0 and ZA.tr("Windows_SeatDriver", name) or name }
+    local status = ZA.tr("Windows_SeatEmpty")
     pcall(function()
-        if not w:isSeatInstalled(seat) then status = "no seat fitted"
-        elseif v:getSeat(w.character) == seat then status = "where you are"
-        elseif v:getCharacter(seat) then status = "someone's in it"
-        elseif v:isSeatOccupied(seat) then status = "things on it"
+        if not w:isSeatInstalled(seat) then status = ZA.tr("Windows_SeatNone")
+        elseif v:getSeat(w.character) == seat then status = ZA.tr("Windows_SeatYou")
+        elseif v:getCharacter(seat) then status = ZA.tr("Windows_SeatTaken")
+        elseif v:isSeatOccupied(seat) then status = ZA.tr("Windows_SeatThings")
         end
     end)
     table.insert(parts, status)
     return seat, table.concat(parts, ", ") .. ZA.pos(w.joypadSeat, script:getPassengerCount()), ""
 end
 specials.ISVehicleSeatUI = function(w)
-    return "Choose a seat. Left and Right across the car, Up and Down between rows. {Cross} sits there, {Square} gets out by that seat's door. {Circle} cancels"
+    return ZA.tr("Windows_SeatsIntro")
 end

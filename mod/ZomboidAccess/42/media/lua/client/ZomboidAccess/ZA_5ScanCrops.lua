@@ -11,7 +11,7 @@ for _, c in ipairs(S.categories) do if c.key == "crops" then inserted = true end
 if not inserted then
     for i, c in ipairs(S.categories) do
         if c.key == "water" then
-            table.insert(S.categories, i + 1, { key = "crops", name = "Crops", none = "no crops or furrows" })
+            table.insert(S.categories, i + 1, { key = "crops", name = ZA.tr("ScanCrops_Cat"), none = ZA.tr("ScanCrops_None") })
             break
         end
     end
@@ -34,7 +34,7 @@ table.insert(S.postBuilders, function(lists)
                 baseName = "crop", plant = plant,
                 name = function(e)
                     local ok, w = pcall(ZA.CU.plantWords, e.plant, getPlayer())
-                    return ok and w or "a crop"
+                    return ok and w or ZA.tr("ScanCrops_Fallback")
                 end,
                 x = x + 0.5, y = y + 0.5, z = z, walk = "adjacent",
                 obj = plant:getObject(),

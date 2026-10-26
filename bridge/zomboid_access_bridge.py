@@ -47,34 +47,85 @@ POLL_S = 0.04
 # "press to start" screen -> exit GameLoadingState when the player presses -> IngameState.
 STATE_EXIT = b"STATE: exit zombie.gameStates."
 LOADED_MARK = b"game loading took"
-STARTING_TEXT = "Starting Project Zomboid. This takes about a minute."
-STILL_STARTING_TEXT = "Still starting."
-STILL_LOADING_TEXT = "Still loading the world."
-LOADED_TEXT = "The world has loaded. Press {Cross} to begin, or click the left mouse button."
-STILL_WAITING_TEXT = "The world is ready. Press {Cross} to begin, or click the left mouse button."
-LEAVING_TEXT = "Leaving the world and saving. Please wait."
-STILL_LEAVING_TEXT = "Still saving."
 REMIND_S = 20.0  # how long a silent loading screen waits before saying it's still there
 
 log = logging.getLogger("zomboidAccess")
 
+# What the bridge says itself, by the game's language (options.ini, language=EN, FR, ...). Any other language, or a
+# missing text, falls back to English. {Cross} and the other {Button} marks become the player's button names (buttons).
+TEXTS = {
+    "EN": {
+        "STARTING": "Starting Project Zomboid. This takes about a minute.",
+        "STILL_STARTING": "Still starting.",
+        "STILL_LOADING": "Still loading the world.",
+        "LOADED": "The world has loaded. Press {Cross} to begin, or click the left mouse button.",
+        "STILL_WAITING": "The world is ready. Press {Cross} to begin, or click the left mouse button.",
+        "LEAVING": "Leaving the world and saving. Please wait.",
+        "STILL_LEAVING": "Still saving.",
+        "TEST": "Zomboid Access is speaking through {reader}.",
+    },
+    "FR": {
+        "STARTING": "Démarrage de Project Zomboid. Cela prend environ une minute.",
+        "STILL_STARTING": "Toujours en cours de démarrage.",
+        "STILL_LOADING": "Chargement du monde toujours en cours.",
+        "LOADED": "Le monde est chargé. Appuie sur {Cross} pour commencer, ou clique avec le bouton gauche de la souris.",
+        "STILL_WAITING": "Le monde est prêt. Appuie sur {Cross} pour commencer, ou clique avec le bouton gauche de la souris.",
+        "LEAVING": "Sortie du monde et sauvegarde en cours. Patiente un instant.",
+        "STILL_LEAVING": "Sauvegarde toujours en cours.",
+        "TEST": "Zomboid Access parle via {reader}.",
+    },
+}
+
 # Button names as the game's Controller option "Button style" labels them, like the mod: 1 Xbox, 2 PlayStation,
-# 3 Steam Deck. Our own lines write {Cross}.
+# 3 Steam Deck. Our own lines write {Cross}. PlayStation names are the game's own, by language ("Share" stays).
 OPTIONS_FILE = os.path.join(ZOMBOID, "options.ini")
-BUTTON_NAMES = {"1": {"Cross": "A"}, "3": {"Cross": "A"}}
+XBOX_NAMES = {"Cross": "A", "Circle": "B", "Square": "X", "Triangle": "Y"}
+BUTTON_NAMES = {
+    "EN": {"1": XBOX_NAMES, "3": XBOX_NAMES},
+    "FR": {
+        "1": XBOX_NAMES, "3": XBOX_NAMES,
+        "2": {"Cross": "Croix", "Circle": "Rond", "Square": "Carré", "Triangle": "Triangle"},
+    },
+}
 
 
-def buttons(text):
-    style = "2"
+def _option(key, default):
+    # One value of the game's options.ini, read afresh each time (the player may change it in the game's options).
+    value = default
     try:
         with open(OPTIONS_FILE, encoding="utf-8", errors="replace") as f:
             for line in f:
-                if line.startswith("controllerButtonStyle="):
-                    style = line.split("=", 1)[1].strip()
+                if line.startswith(key + "="):
+                    value = line.split("=", 1)[1].strip()
     except OSError:
         pass
-    names = BUTTON_NAMES.get(style, {})
-    return re.sub(r"{(\w+)}", lambda m: names.get(m.group(1), m.group(1)), text)
+    return value
+
+
+def _windowsLanguage():
+    # Before the game has ever saved its options, it uses the language of Windows.
+    try:
+        buf = ctypes.create_unicode_buffer(85)
+        if ctypes.windll.kernel32.GetUserDefaultLocaleName(buf, 85):
+            return buf.value.split("-")[0].upper()
+    except Exception:
+        pass
+    return "EN"
+
+
+def language():
+    lang = _option("language", None)
+    lang = (lang if lang else _windowsLanguage()).upper()
+    return lang if lang in TEXTS else "EN"
+
+
+def text(key):
+    return TEXTS[language()].get(key) or TEXTS["EN"][key]
+
+
+def buttons(line):
+    names = BUTTON_NAMES.get(language(), {}).get(_option("controllerButtonStyle", "2"), {})
+    return re.sub(r"{(\w+)}", lambda m: names.get(m.group(1), m.group(1)), line)
 
 
 def _here():
@@ -381,7 +432,7 @@ class Loading:
     def line(self, raw):
         if LOADED_MARK in raw:
             self.phase = "ready"
-            self._say(LOADED_TEXT)
+            self._say(text("LOADED"))
             return
         i = raw.find(STATE_EXIT)
         if i < 0:
@@ -395,7 +446,7 @@ class Loading:
             self.phase = None  # the player pressed to begin; the mod speaks again
         elif state == b"IngameState":
             self.phase = "leaving"
-            self._say(LEAVING_TEXT)
+            self._say(text("LEAVING"))
         elif state in (b"TISLogoState", b"TermsOfServiceState"):
             if self.phase == "starting":
                 self.phase = None
@@ -404,10 +455,10 @@ class Loading:
         if self.phase is None or time.monotonic() - self.lastSaid < REMIND_S:
             return
         self._say({
-            "starting": STILL_STARTING_TEXT,
-            "loading": STILL_LOADING_TEXT,
-            "ready": STILL_WAITING_TEXT,
-            "leaving": STILL_LEAVING_TEXT,
+            "starting": text("STILL_STARTING"),
+            "loading": text("STILL_LOADING"),
+            "ready": text("STILL_WAITING"),
+            "leaving": text("STILL_LEAVING"),
         }[self.phase])
 
 
@@ -454,7 +505,7 @@ def main(argv):
 
     if argv[:1] == ["--test"]:
         sp = Speaker()
-        sp.say("S\tZomboid Access is speaking through " + (sp.reader.name if sp.reader else "nothing") + ".")
+        sp.say("S\t" + text("TEST").format(reader=sp.reader.name if sp.reader else "nothing"))
         time.sleep(3)
         return 0
 
@@ -490,7 +541,7 @@ def speak(game):
     console = Tail(CONSOLE_FILE)
     loading = Loading(sp, launching=game is not None)
     if game:
-        sp.say("S\t" + STARTING_TEXT)
+        sp.say("S\t" + text("STARTING"))
 
     gameGone = threading.Event()
 

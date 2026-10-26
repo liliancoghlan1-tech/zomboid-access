@@ -42,6 +42,7 @@ end
 local function info(menu, text)
     local o = menu:addOption(text, nil, nil)
     o.notAvailable = true
+    o.zaInfo = true     -- a line of information: not chosen, and not said "not available" either
     return o
 end
 
@@ -84,8 +85,10 @@ local function canMake(logic, recipe)
 end
 
 local function catName(c)
-    if not c or c == "" then return "Other" end
-    local t = getTextOrNull("IGUI_CraftCategory_" .. c)
+    if not c or c == "" then return ZA.tr("Craft_Other") end
+    -- the game's crafting window names them IGUI_CraftingCategories_<Name> (first letter upper case)
+    local t = getTextOrNull("IGUI_CraftingCategories_" .. string.upper(string.sub(c, 1, 1)) .. string.sub(c, 2))
+        or getTextOrNull("IGUI_CraftCategory_" .. c)
     return t or c
 end
 
@@ -111,13 +114,13 @@ local function inputName(input)
         local items = input:getPossibleInputItems()
         if items:size() > 0 then
             name = items:get(0):getDisplayName()
-            if items:size() > 1 then name = name .. " or similar" end
+            if items:size() > 1 then name = ZA.tr("Craft_OrSimilar", name) end
         end
     end)
     if not name then
         pcall(function() name = tostring(input:getOriginalLine()) end)
     end
-    return name or "something"
+    return name or ZA.tr("Craft_Something")
 end
 
 -- the lines of what a recipe needs: "4 Nails, you have 10", "Tool: Hammer, kept, you have 1"
@@ -133,8 +136,12 @@ function CR.needs(recipe)
             local h = have(inp)
             local tool = false
             pcall(function() tool = inp:isTool() or inp:isKeep() end)
-            local line = (tool and ("Tool: " .. nm .. ", kept") or (amount .. " " .. nm))
-            if h then line = line .. ", you have " .. h end
+            local line
+            if tool then
+                line = h and ZA.tr("Craft_NeedToolHave", nm, h) or ZA.tr("Craft_NeedTool", nm)
+            else
+                line = h and ZA.tr("Craft_NeedItemHave", amount, nm, h) or ZA.tr("Craft_NeedItem", amount, nm)
+            end
             table.insert(out, line)
             if h and h < amount then table.insert(missing, nm) end
         end
@@ -151,7 +158,7 @@ function CR.make(kind, recipe, times)
     logic:autoPopulateInputs()
     if kind == "build" then
         local objInfo = logic:getSelectedBuildObject()
-        if not objInfo then ZA.say("That one can't be placed from here."); return end
+        if not objInfo then ZA.say(ZA.tr("Craft_CantPlace")); return end
         local inv = p:getInventory()
         -- the item type for a tool, as ISBuildPanel's (private) getTool picks it
         local function tool(t)
@@ -176,7 +183,7 @@ function CR.make(kind, recipe, times)
         getCell():setDrag(ent, p:getPlayerNum())
         return
     end
-    if not logic:canPerformCurrentRecipe() then ZA.say("You can't make that yet."); return end
+    if not logic:canPerformCurrentRecipe() then ZA.say(ZA.tr("Craft_CantMakeYet")); return end
     -- the window moves floor items into your hands first, if the recipe can't use them from the floor
     pcall(function()
         if not recipe:isCanBeDoneFromFloor() then
@@ -185,9 +192,13 @@ function CR.make(kind, recipe, times)
         end
     end)
     local actions = ISEntityUI.HandcraftStartMultiple(p, logic, false, times or 1, false)
-    if not actions then ZA.say("Couldn't start that. You may need a table or counter next to you."); return end
+    if not actions then ZA.say(ZA.tr("Craft_CouldntStart")); return end
     for _, a in ipairs(actions) do ISTimedActionQueue.add(a) end
-    ZA.say("Making " .. recipe:getTranslationName() .. ((times or 1) > 1 and (", " .. times .. " times") or "") .. ".")
+    if (times or 1) > 1 then
+        ZA.say(ZA.tr("Craft_MakingTimes", recipe:getTranslationName(), times))
+    else
+        ZA.say(ZA.tr("Craft_Making", recipe:getTranslationName()))
+    end
 end
 
 function CR.recipeMenu(kind, recipe)
@@ -197,26 +208,29 @@ function CR.recipeMenu(kind, recipe)
     local name = recipe:getTranslationName()
     if ok then
         if kind == "build" then
-            menu:addOption(ZA.buttons("Place it: " .. name .. ". A square appears; the D-pad moves it, {Cross} builds"), kind, function() CR.make(kind, recipe) end)
+            menu:addOption(ZA.buttons(ZA.tr("Craft_PlaceIt", name)), kind, function() CR.make(kind, recipe) end)
         else
-            menu:addOption("Make it: " .. name, kind, function() CR.make(kind, recipe, 1) end)
+            menu:addOption(ZA.tr("Craft_MakeIt", name), kind, function() CR.make(kind, recipe, 1) end)
             local count = 1
             pcall(function() count = logic:getPossibleCraftCount(true) end)
             if count and count > 1 then
                 local n = math.min(count, 10)
-                menu:addOption("Make " .. n .. " of them", kind, function() CR.make(kind, recipe, n) end)
+                menu:addOption(ZA.tr("Craft_MakeN", n), kind, function() CR.make(kind, recipe, n) end)
             end
         end
     else
-        info(menu, "Can't make it yet: " .. name)
+        info(menu, ZA.tr("Craft_CantYet", name))
     end
     local lines = CR.needs(recipe)
     for _, l in ipairs(lines) do info(menu, l) end
     pcall(function()
         local tm = recipe:getTime(getPlayer())
-        if tm and tm > 0 then info(menu, "Takes about " .. math.max(1, math.floor(tm / 60 + 0.5)) .. " in-game minutes") end
+        if tm and tm > 0 then
+            local mins = math.max(1, math.floor(tm / 60 + 0.5))
+            info(menu, mins == 1 and ZA.tr("Craft_TakesOne") or ZA.tr("Craft_TakesMany", mins))
+        end
     end)
-    menu:addOption("Back to the list", kind, function() CR.categoryMenu(kind, CR.lastCat) end)
+    menu:addOption(ZA.tr("Craft_Back"), kind, function() CR.categoryMenu(kind, CR.lastCat) end)
     showMenu(menu)
 end
 
@@ -235,14 +249,15 @@ function CR.categoryMenu(kind, cat)
     table.sort(can, byName); table.sort(cannot, byName)
     local menu = openMenu()
     for _, r in ipairs(can) do
-        menu:addOption(r:getTranslationName() .. ", you can make it", kind, function() CR.recipeMenu(kind, r) end)
+        menu:addOption(ZA.tr("Craft_RowCan", r:getTranslationName()), kind, function() CR.recipeMenu(kind, r) end)
     end
     for _, r in ipairs(cannot) do
         local _, missing = CR.needs(r)
-        local m = #missing > 0 and ("missing " .. table.concat(missing, ", ")) or "can't yet"
-        menu:addOption(r:getTranslationName() .. ", " .. m, kind, function() CR.recipeMenu(kind, r) end)
+        local rname = r:getTranslationName()
+        local label = #missing > 0 and ZA.tr("Craft_RowMissing", rname, table.concat(missing, ", ")) or ZA.tr("Craft_RowCant", rname)
+        menu:addOption(label, kind, function() CR.recipeMenu(kind, r) end)
     end
-    menu:addOption("Back to the categories", kind, function() CR.open(kind) end)
+    menu:addOption(ZA.tr("Craft_BackCats"), kind, function() CR.open(kind) end)
     showMenu(menu)
 end
 
@@ -261,11 +276,11 @@ function CR.open(kind)
     table.sort(order)
     local menu = openMenu()
     for _, n in ipairs(order) do
-        menu:addOption(n .. ", " .. cats[n].total .. " recipes", kind, function() CR.categoryMenu(kind, n) end)
+        menu:addOption(cats[n].total == 1 and ZA.tr("Craft_CatRowOne", n) or ZA.tr("Craft_CatRow", n, cats[n].total), kind, function() CR.categoryMenu(kind, n) end)
     end
-    if #order == 0 then info(menu, kind == "build" and "Nothing to build" or "Nothing to craft") end
+    if #order == 0 then info(menu, ZA.tr(kind == "build" and "Craft_NothingBuild" or "Craft_NothingCraft")) end
     showMenu(menu)
-    ZA.say((kind == "build" and "Build" or "Craft") .. ": pick a category. Each recipe says if you can make it, and what's missing if not.")
+    ZA.say(ZA.tr(kind == "build" and "Craft_IntroBuild" or "Craft_IntroCraft"))
 end
 
 -- ---------- in place of the game's windows ----------
@@ -297,7 +312,7 @@ end
 -- "Craft" and "Build" in the You list
 table.insert(S.builders, function(lists)
     local p = getPlayer()
-    for i, k in ipairs({ { "craft", "Craft: make things from what you have. {Square}" }, { "build", "Build: walls, furniture, fences and more. {Square}" } }) do
+    for i, k in ipairs({ { "craft", ZA.tr("Craft_YouCraft") }, { "build", ZA.tr("Craft_YouBuild") } }) do
         table.insert(lists.you, {
             cat = "you", key = "you|" .. k[1], noWhere = true, order = 905 + i, baseName = k[1],
             name = k[2], x = p:getX(), y = p:getY(), z = p:getZ(),

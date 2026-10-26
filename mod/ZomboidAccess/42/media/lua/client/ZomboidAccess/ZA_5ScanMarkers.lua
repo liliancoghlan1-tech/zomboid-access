@@ -18,25 +18,31 @@ end
 function MK.add()
     local p = getPlayer()
     local list = MK.all()
-    local name = "Home"
-    for _, m in ipairs(list) do if m.name == "Home" then name = "Marker " .. (#list + 1) end end
+    -- the first marker is called Home (in the game language); markers saved earlier may still say Home in English
+    local home = ZA.tr("ScanMarkers_Home")
+    local name = home
+    for _, m in ipairs(list) do
+        if m.name == home or m.name == "Home" then name = ZA.tr("ScanMarkers_Default", #list + 1) end
+    end
     local m = { name = name, x = math.floor(p:getX()) + 0.5, y = math.floor(p:getY()) + 0.5, z = math.floor(p:getZ()) }
     table.insert(list, m)
     S.builtAt = -1e9
     ZA.log("[ZA] marker added " .. name)
-    ZA.say("Marked this spot as " .. name .. ". Type a new name and press Enter, or Escape to keep it.")
+    ZA.say(ZA.tr("ScanMarkers_Marked", name))
     MK.rename(m)
 end
 
 -- A box to type a name into (keyboard).
 function MK.rename(m)
     local ok, err = pcall(function()
-        local box = ISTextBox:new(0, 0, 280, 180, "Marker name:", m.name, nil, function(target, button)
+        -- an empty box: with the default name in it, what you type is added after it (in game 2026-10-20 the
+        -- marker became "Maisonmaison principale"); left empty, the default name stays
+        local box = ISTextBox:new(0, 0, 280, 180, ZA.tr("ScanMarkers_BoxTitle"), "", nil, function(target, button)
             if button.internal == "OK" then
                 local t = button.parent.entry:getText()
                 if t and t:match("%S") then
                     m.name = t
-                    ZA.say("Named " .. t .. ".")
+                    ZA.say(ZA.tr("ScanMarkers_Named", t))
                 end
             end
         end, 0)
@@ -58,7 +64,7 @@ function MK.remove(m)
         if x == m then table.remove(list, i); break end
     end
     S.builtAt = -1e9
-    ZA.say("Removed " .. m.name .. ".")
+    ZA.say(ZA.tr("ScanMarkers_Removed", m.name))
 end
 
 table.insert(S.builders, function(lists)
@@ -72,8 +78,8 @@ table.insert(S.builders, function(lists)
     -- the action at the end of the You list
     local p = getPlayer()
     table.insert(lists.you, {
-        cat = "you", key = "you|mark", noWhere = true, order = 1000, baseName = "Mark this spot",
-        name = "Mark this spot: {Square} saves where you're standing as a marker", x = p:getX(), y = p:getY(), z = p:getZ(),
+        cat = "you", key = "you|mark", noWhere = true, order = 1000, baseName = ZA.tr("ScanMarkers_MarkSpot"),
+        name = ZA.tr("ScanMarkers_MarkSpotHelp"), x = p:getX(), y = p:getY(), z = p:getZ(),
         action = MK.add,
     })
 end)

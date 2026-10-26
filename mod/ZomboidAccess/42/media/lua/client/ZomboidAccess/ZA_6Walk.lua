@@ -100,7 +100,7 @@ function W.stop(quiet)
     local p = getPlayer()
     if (W.action or W.travel) and p then ISTimedActionQueue.clear(p) end
     W.action, W.entry, W.travel, W.afterArrive, W.safe = nil, nil, nil, nil, nil
-    if not quiet then ZA.say("Stopped.") end
+    if not quiet then ZA.say(ZA.tr("Walk_Stopped")) end
 end
 
 W.startWalk, W.watchFail, W.strategies = startWalk, watchFail, strategies
@@ -185,17 +185,17 @@ function W.startTravel(p, e, warn)
     W.travel = { entry = e, turn = 1, fails = 0, lastBand = nil }
     if travelArrived(p, e) then
         W.travel = nil
-        ZA.say("You're already at " .. S.entryName(e) .. ".")
+        ZA.say(ZA.tr("Walk_AlreadyAt", S.entryName(e)))
         return
     end
     if not travelLeg(p) then
         W.travel = nil
-        ZA.say("No way to start towards " .. S.entryName(e) .. " from here.")
+        ZA.say(ZA.tr("Walk_NoWayStart", S.entryName(e)))
         return
     end
     local x, y, z = S.entryPos(e)
     ZA.log("[ZA] travel to " .. e.key)
-    ZA.say(warn .. "Travelling to " .. S.entryName(e) .. ", " .. S.where(x, y, z) .. ". {Square} or End stops.")
+    ZA.say(warn .. ZA.tr("Walk_Travelling", S.entryName(e), S.where(x, y, z, e.far)))
 end
 
 -- A leg ended: go on, try another way round, or say we've arrived.
@@ -206,11 +206,11 @@ local function travelNext(p, ok)
         W.travel, W.action, W.entry = nil, nil, nil
         ZA.log("[ZA] travel arrived " .. e.key)
         if e.key:find("|town|", 1, true) then
-            ZA.say("You're in " .. e.baseName .. ". The Places category lists what's here.")
+            ZA.say(ZA.tr("Walk_InTown", e.baseName))
         elseif e.marker then
-            ZA.say("You're at " .. e.marker.name .. ".")
+            ZA.say(ZA.tr("Walk_AtMarker", e.marker.name))
         else
-            ZA.say("You've reached the " .. S.entryName(e) .. ". The Doors category lists the way in.")
+            ZA.say(ZA.tr("Walk_Reached", S.entryName(e)))
         end
         return
     end
@@ -219,13 +219,13 @@ local function travelNext(p, ok)
     if tr.fails >= #turns or not travelLeg(p) then
         W.travel, W.action, W.entry = nil, nil, nil
         print("[ZA] travel stuck " .. e.key)
-        ZA.say("Can't find a way further. " .. S.entryName(e) .. " is " .. S.where(x, y, z) .. ".")
+        ZA.say(ZA.tr("Walk_NoFurther", S.entryName(e), S.where(x, y, z, e.far)))
         return
     end
     -- a progress word every 50 metres
     local d = math.sqrt((x - p:getX()) ^ 2 + (y - p:getY()) ^ 2)
     local band = math.floor(d / 50)
-    if tr.lastBand and band < tr.lastBand then ZA.say(S.where(x, y, z) .. " to go.") end
+    if tr.lastBand and band < tr.lastBand then ZA.say(ZA.tr("Walk_ToGo", S.where(x, y, z))) end
     tr.lastBand = band
 end
 
@@ -241,16 +241,16 @@ function W.go()
         if e and not e.noWhere and not e.action and p:getVehicle():isDriver(p) and ZA.RT then
             ZA.RT.start(e, "guide")
         else
-            ZA.say("You're in a vehicle.")
+            ZA.say(ZA.tr("Walk_InVehicle"))
         end
         return
     end
-    if getGameSpeed() == 0 then ZA.say("The game is paused."); return end
+    if getGameSpeed() == 0 then ZA.say(ZA.tr("Walk_Paused")); return end
     local e = S.current()
-    if not e then ZA.say("Nothing selected. Use Page Down to pick something first."); return end
+    if not e then ZA.say(ZA.tr("Walk_NothingSelected")); return end
     if e.action then e.action(); return end
-    if not S.alive(e) then ZA.say(S.entryName(e) .. " is gone."); return end
-    if e.noWhere then ZA.say("That's about you; pick a place in another category."); return end
+    if not S.alive(e) then ZA.say(ZA.tr("Walk_Gone", S.entryName(e))); return end
+    if e.noWhere then ZA.say(ZA.tr("Walk_AboutYou")); return end
     if ZA.G and ZA.G.entry then ZA.G.stop() end
     local name = S.entryName(e)
     -- zombies already close when you choose to walk (to get away, say) only get a warning
@@ -258,14 +258,14 @@ function W.go()
     local warn = ""
     local z = S.nearestThreat(6, 2.5)
     if z then
-        warn = "Careful, " .. S.threatText(z) .. ". "
+        warn = ZA.tr("Walk_Careful", S.threatText(z)) .. " "
         local zl = getCell():getZombieList()
         for i = 0, zl:size() - 1 do W.known[zl:get(i)] = true end
     end
     W.startZ = p:getZ()
     if e.walk == "travel" then
         local ok, err = pcall(W.startTravel, p, e, warn)
-        if not ok then print("[ZA] travel error: " .. tostring(err)); ZA.say("Can't travel there.") end
+        if not ok then print("[ZA] travel error: " .. tostring(err)); ZA.say(ZA.tr("Walk_CantTravel")) end
         return
     end
     -- zombies close by: walk round them in short stretches (ZA_6WalkSafe), the last few steps the usual way
@@ -277,7 +277,7 @@ function W.go()
     local ok, res, action = pcall(startWalk, p, e, 1)
     if not ok then
         print("[ZA] walk error: " .. tostring(res))
-        ZA.say("Can't walk there.")
+        ZA.say(ZA.tr("Walk_CantWalk"))
         return
     end
     local try = 1
@@ -289,18 +289,18 @@ function W.go()
     if res == "here" then
         face(p, e)
         if W.afterArrive then local f = W.afterArrive; W.afterArrive = nil; f(); return end
-        ZA.say("You're already at " .. name .. ".")
+        ZA.say(ZA.tr("Walk_AlreadyAt", name))
         return
     end
     if not res then
         W.afterArrive = nil
-        ZA.say("No way to get to " .. name .. " from here.")
+        ZA.say(ZA.tr("Walk_NoWayTo", name))
         return
     end
     W.action, W.entry, W.startedAt, W.try = action, e, getTimestampMs(), try
     watchFail(action)
     ZA.log("[ZA] walk to " .. e.key)
-    ZA.say(warn .. "Walking to " .. name .. ". {Square} or End stops.")
+    ZA.say(warn .. ZA.tr("Walk_Walking", name))
 end
 
 -- Watch the walk: arrived, stopped by the player, or no way through (then try the next way once).
@@ -318,7 +318,7 @@ function W.watch()
             W.action, W.entry, W.travel, W.safe = nil, nil, nil, nil
             ISTimedActionQueue.clear(p)
             ZA.log("[ZA] walk stopped by zombie " .. (e and e.key or ""))
-            ZA.urgent("Stopped! " .. S.threatText(z) .. ".")
+            ZA.urgent(ZA.tr("Walk_StoppedZombie", S.threatText(z)))
             return
         end
     end
@@ -340,7 +340,7 @@ function W.watch()
         pcall(function() moved = p:pressedMovement(false) or p:pressedCancelAction() end)
         if moved and not failed and not succeeded then
             W.travel, W.entry = nil, nil
-            ZA.say("Stopped.")
+            ZA.say(ZA.tr("Walk_Stopped"))
             return
         end
         travelNext(p, not failed)
@@ -357,13 +357,13 @@ function W.watch()
     if e.walk == "stairsDown" then arrived = math.floor(p:getZ()) < math.floor(W.startZ or 0) end
     if arrived or (succeeded and not failed) then
         face(p, e)
-        if e.walk == "stairsUp" then ZA.say("You're at the top of the stairs.")
-        elseif e.walk == "stairsDown" then ZA.say("You're at the bottom of the stairs.")
+        if e.walk == "stairsUp" then ZA.say(ZA.tr("Walk_StairsTop"))
+        elseif e.walk == "stairsDown" then ZA.say(ZA.tr("Walk_StairsBottom"))
         elseif W.afterArrive then
             local f = W.afterArrive
             W.afterArrive = nil
             f()
-        else ZA.say("Arrived: " .. name .. ".") end
+        else ZA.say(ZA.tr("Walk_Arrived", name)) end
         ZA.log("[ZA] walk arrived " .. e.key)
     elseif failed then
         -- one more go another way before giving up
@@ -378,11 +378,11 @@ function W.watch()
             end
         end
         W.afterArrive = nil
-        ZA.say("Couldn't find a way to " .. name .. ". It's " .. S.where(x, y, z) .. ".")
+        ZA.say(ZA.tr("Walk_CouldntFind", name, S.where(x, y, z)))
         print("[ZA] walk failed " .. e.key)
     else
         W.afterArrive = nil
-        ZA.say("Stopped. " .. name .. " is " .. S.where(x, y, z) .. ".")
+        ZA.say(ZA.tr("Walk_StoppedAt", name, S.where(x, y, z)))
         ZA.log("[ZA] walk stopped " .. e.key)
     end
 end

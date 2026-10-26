@@ -56,20 +56,22 @@ function A.check()
 
     if closest then
         A.closeWarned[closest] = true
-        A.say("Zombie right next to you, " .. (S.direction(closest:getX() - px, closest:getY() - py) ~= "" and S.direction(closest:getX() - px, closest:getY() - py) or "here") .. ".")
+        local dir = S.direction(closest:getX() - px, closest:getY() - py)
+        if dir == "" then dir = ZA.tr("Alert_Here") end
+        A.say(ZA.tr("Alert_NextTo", dir))
         return
     end
     if newOnes > 0 then
         local where = S.where(nearestNew:getX(), nearestNew:getY(), nearestNew:getZ())
         local text
-        if newOnes == 1 then text = "Zombie chasing you, " .. where
-        else text = newOnes .. " zombies chasing you, nearest " .. where end
-        if count > newOnes then text = text .. ". " .. count .. " chasing" end
+        if newOnes == 1 then text = ZA.tr("Alert_Chasing", where)
+        else text = ZA.tr("Alert_ChasingMany", newOnes, where) end
+        if count > newOnes then text = text .. ". " .. ZA.tr("Alert_ChasingTotal", count) end
         A.say(text .. "." .. (ZA.CB and ZA.CB.firstChase() or ""))
         return
     end
     if hadChasers and count == 0 then
-        A.say("Nothing chasing you now.")
+        A.say(ZA.tr("Alert_Gone"))
     end
 end
 

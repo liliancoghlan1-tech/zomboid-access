@@ -9,20 +9,20 @@ local F = ZA.F
 if not SandboxOptionsScreen then return end
 
 F.screens.SandboxOptionsScreen = {
-    name = "Sandbox settings",
-    hint = "Left or Up: the pages of settings. Down: presets and the Advanced switch",
+    name = ZA.tr("Sandbox_Name"),
+    hint = ZA.tr("Sandbox_Hint"),
 }
 F.screens.SandboxOptionsScreenListBox = {
-    name = "Sandbox settings, pages",
-    hint = "Up and Down choose a page, Right goes into its settings, {Circle} leaves the pages for the Start and Back buttons",
+    name = ZA.tr("Sandbox_PagesName"),
+    hint = ZA.tr("Sandbox_PagesHint"),
 }
 F.screens.SandboxOptionsScreenPanel = {
-    name = "Settings",
-    hint = "Up and Down move, {Cross} changes or opens a setting, Left goes back to the pages",
+    name = ZA.tr("Sandbox_SettingsName"),
+    hint = ZA.tr("Sandbox_SettingsHint"),
 }
 F.screens.SandboxOptionsScreenPresetPanel = {
-    name = "Presets",
-    hint = "Left and Right move between the preset list, Save, Delete and the Advanced switch. {Circle} goes back",
+    name = ZA.tr("Sandbox_PresetsName"),
+    hint = ZA.tr("Sandbox_PresetsHint"),
 }
 
 for _, k in ipairs({ "SandboxOptionsScreenListBox", "SandboxOptionsScreenPanel", "SandboxOptionsScreenPresetPanel" }) do
@@ -34,16 +34,18 @@ end
 
 F.readers.SandboxOptionsScreenListBox = function(p)
     local it = p.items and p.items[p.selected]
-    if not it then return p, "No pages", "" end
+    if not it then return p, ZA.tr("Sandbox_NoPages"), "" end
     local d = it.item or {}
     local name = ZA.clean(it.text or "")
     if d.category then
-        return it, name .. ", heading" .. ZA.pos(p.selected, #p.items), ""
+        return it, ZA.tr("Sandbox_Heading", name) .. ZA.pos(p.selected, #p.items), ""
     end
-    local count = ""
     local panel = d.panel
-    if panel and panel.settingNames then count = ", " .. #panel.settingNames .. " settings" end
-    return it, name .. count .. ZA.pos(p.selected, #p.items), ""
+    if panel and panel.settingNames then
+        local k = #panel.settingNames
+        name = ZA.tr(k == 1 and "Sandbox_PageCountOne" or "Sandbox_PageCountMany", name, k)
+    end
+    return it, name .. ZA.pos(p.selected, #p.items), ""
 end
 
 -- ---------- settings ----------
@@ -77,11 +79,11 @@ local function valueOf(child)
     end
     local words, value = F.describeBare(c)
     if c.Type == "ISTickBox" then
-        local on = c.selected[1] and "on" or "off"
-        return on .. ", tick box, {Cross} switches it", on
+        local on = c.selected[1] and ZA.tr("Sandbox_On") or ZA.tr("Sandbox_Off")
+        return ZA.tr("Sandbox_TickHint", on), on
     elseif c.Type == "ISTextEntryBox" then
         local v = c:getText() or ""
-        return (v == "" and "empty" or v) .. ", edit box, {Cross} types a new value", v
+        return ZA.tr("Sandbox_EditHint", v == "" and ZA.tr("Sandbox_Empty") or v), v
     end
     return words, value
 end
@@ -116,7 +118,7 @@ local lastSection = {}
 F.readers.SandboxOptionsScreenPanel = function(p)
     patchPanelClass(p)
     local child, i, n = rowChild(p)
-    if not child then return p, "No settings on this page", "" end
+    if not child then return p, ZA.tr("Sandbox_NoSettings"), "" end
     local name = settingOf(p, child)
     local label = name and p.labels[name]
     local title = label and ZA.clean(label.name or "") or F.labelFor(child)

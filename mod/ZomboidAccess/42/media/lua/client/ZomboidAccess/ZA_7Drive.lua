@@ -108,20 +108,30 @@ local function pathCheck(p, v, hx, hy, speed)
                 end
                 if not what and (sq:isSolid() or sq:isSolidTrans()) then
                     -- on the road: say it from far off; beside the road: only when it's close
-                    if isRoad(x, y, z) then what = "Something on the road"
-                    elseif d <= lim then what = "Something solid" end
+                    if isRoad(x, y, z) then what = "OnRoad"
+                    elseif d <= lim then what = "Solid" end
                 end
                 -- a wall or fence only counts across your way (a north wall when you drive north or south,
                 -- a west wall when you drive east or west); one running beside the road doesn't
                 if not what and d <= lim then
                     local across = math.abs(hy) >= math.abs(hx) and IsoFlagType.collideN or IsoFlagType.collideW
-                    if sq:has(across) then what = "Wall or fence" end
+                    if sq:has(across) then what = "Wall" end
                 end
                 if what then return what, d end
             end
         end
     end
     return nil
+end
+
+-- What stands ahead, said in one piece. `what` is an id: Car, Zombie, Tree, OnRoad, Solid, Wall.
+function DR.aheadText(what, d)
+    if what == "Car" then return ZA.tr("Drive_AheadCar", d) end
+    if what == "Zombie" then return ZA.tr("Drive_AheadZombie", d) end
+    if what == "Tree" then return ZA.tr("Drive_AheadTree", d) end
+    if what == "OnRoad" then return ZA.tr("Drive_AheadOnRoad", d) end
+    if what == "Solid" then return ZA.tr("Drive_AheadSolid", d) end
+    return ZA.tr("Drive_AheadWall", d)
 end
 
 -- ---------- each frame ----------
@@ -143,22 +153,22 @@ function DR.tick()
     local engine = v:isEngineRunning()
     if engine ~= DR.engine then
         DR.engine = engine
-        ZA.say(engine and "Engine running" or "Engine off")
+        ZA.say(engine and ZA.tr("Drive_EngineOn") or ZA.tr("Drive_EngineOff"))
     end
     local cruise, cs = v:isRegulator(), math.floor(v:getRegulatorSpeed() + 0.5)
     if cruise ~= DR.cruise or (cruise and cs ~= DR.cruiseSpeed) then
         -- autodrive sets the speed itself: don't read every change
         local auto = ZA.RT and ZA.RT.route and ZA.RT.route.mode == "auto"
         if auto then
-        elseif cruise then ZA.say("Cruise control " .. cs .. " kilometres an hour")
-        elseif DR.cruise then ZA.say("Cruise control off") end
+        elseif cruise then ZA.say(ZA.tr("Drive_Cruise", cs))
+        elseif DR.cruise then ZA.say(ZA.tr("Drive_CruiseOff")) end
         DR.cruise, DR.cruiseSpeed = cruise, cs
     end
 
     local speed = v:getCurrentSpeedKmHour()
     -- a crash: the speed falls by a lot at once
     if DR.lastSpeed and DR.lastSpeed > 15 and speed < DR.lastSpeed - 12 and not v:isBraking() then
-        ZA.say("Crash!")
+        ZA.say(ZA.tr("Drive_Crash"))
     end
     if t >= (DR.nextSpeedSample or 0) then DR.lastSpeed, DR.nextSpeedSample = speed, t + 150 end
 
@@ -178,16 +188,16 @@ function DR.tick()
             if DR.offRoad ~= true then
                 DR.offRoad = true
                 -- is there road under the car at least?
-                ZA.say(isRoad(v:getX(), v:getY(), z) and "No road ahead" or "Off the road")
+                ZA.say(isRoad(v:getX(), v:getY(), z) and ZA.tr("Drive_NoRoad") or ZA.tr("Drive_OffRoad"))
             end
         else
-            if DR.offRoad == true then ZA.say("Road again") end
+            if DR.offRoad == true then ZA.say(ZA.tr("Drive_RoadAgain")) end
             DR.offRoad = false
             DR.steer = math.deg(math.atan2(mid, look))     -- + = right
             -- a road much wider than the one you're on: a junction or a crossing
             local _, here = roadAcross(v:getX(), v:getY(), z, rx, ry, 3)
             if here and width >= here * 2 + 4 then
-                if t >= (DR.junctionQuiet or 0) then ZA.say("Junction ahead") end
+                if t >= (DR.junctionQuiet or 0) then ZA.say(ZA.tr("Drive_Junction")) end
                 DR.junctionQuiet = t + 6000
             end
         end
@@ -214,7 +224,7 @@ function DR.tick()
             local band = d < 8 and 1 or (d < 20 and 2 or 3)
             local last = DR.saidAhead[what]
             if not last or band < last.band or t - last.t > 5000 then
-                ZA.say(what .. " ahead, " .. math.floor(d) .. " metres")
+                ZA.say(DR.aheadText(what, math.floor(d)))
                 DR.saidAhead[what] = { band = band, t = t }
             end
         end
@@ -231,31 +241,33 @@ end
 -- ---------- words ----------
 
 local function keyWords(p, v)
-    if v:isHotwired() then return "hotwired" end
-    if v:isKeysInIgnition() then return "key in the ignition" end
+    if v:isHotwired() then return ZA.tr("Drive_KeyHotwired") end
+    if v:isKeysInIgnition() then return ZA.tr("Drive_KeyIgnition") end
     local ok, k = pcall(function() return p:getInventory():haveThisKeyId(v:getKeyId()) end)
-    if ok and k then return "you have its key" end
-    return "no key: it needs hotwiring"
+    if ok and k then return ZA.tr("Drive_KeyHave") end
+    return ZA.tr("Drive_KeyNone")
 end
 
 function DR.status(v)
     local p = getPlayer()
     local parts = {}
     local sp = math.floor(math.abs(v:getCurrentSpeedKmHour()) + 0.5)
-    table.insert(parts, sp == 0 and "Standing still" or (sp .. " kilometres an hour" .. (v:getCurrentSpeedKmHour() < -1 and ", reversing" or "")))
-    if v:isRegulator() then table.insert(parts, "cruise control " .. math.floor(v:getRegulatorSpeed() + 0.5)) end
-    table.insert(parts, "fuel " .. math.floor(v:getRemainingFuelPercentage() + 0.5) .. " percent")
-    table.insert(parts, v:isEngineRunning() and "engine running" or "engine off")
-    if v:getHeadlightsOn() then table.insert(parts, "headlights on") end
+    if sp == 0 then table.insert(parts, ZA.tr("Drive_Still"))
+    elseif v:getCurrentSpeedKmHour() < -1 then table.insert(parts, ZA.tr("Drive_SpeedReverse", sp))
+    else table.insert(parts, ZA.tr("Drive_Speed", sp)) end
+    if v:isRegulator() then table.insert(parts, ZA.tr("Drive_CruiseShort", math.floor(v:getRegulatorSpeed() + 0.5))) end
+    table.insert(parts, ZA.tr("Drive_Fuel", math.floor(v:getRemainingFuelPercentage() + 0.5)))
+    table.insert(parts, v:isEngineRunning() and ZA.tr("Drive_EngineOnLow") or ZA.tr("Drive_EngineOffLow"))
+    if v:getHeadlightsOn() then table.insert(parts, ZA.tr("Drive_Headlights")) end
     return table.concat(parts, ", ")
 end
 
 function DR.getIn(p, v)
     local name = getText("IGUI_VehicleName" .. (v:getScript():getCarModelName() or v:getScript():getName()))
-    local state = (v:isEngineRunning() and "engine running" or "engine off") .. ", " .. keyWords(p, v) .. ", fuel "
-        .. math.floor(v:getRemainingFuelPercentage() + 0.5) .. " percent"
-    local parts = { "In the driver's seat of the " .. name .. ", " .. state }
-    table.insert(parts, "Hold D-pad up: the car's menu, to start the engine or hotwire it. {R2} accelerates, {L2} reverses, {Circle} brakes, the left stick steers. {Cross} gets out")
+    local state = (v:isEngineRunning() and ZA.tr("Drive_EngineOnLow") or ZA.tr("Drive_EngineOffLow")) .. ", " .. keyWords(p, v) .. ", "
+        .. ZA.tr("Drive_Fuel", math.floor(v:getRemainingFuelPercentage() + 0.5))
+    local parts = { ZA.tr("Drive_InSeat", name, state) }
+    table.insert(parts, ZA.tr("Drive_Controls"))
     return table.concat(parts, ". ")
 end
 
@@ -281,17 +293,16 @@ end
 table.insert(S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
-        cat = "you", key = "you|drive", noWhere = true, order = 905, baseName = "Driving help",
+        cat = "you", key = "you|drive", noWhere = true, order = 905, baseName = ZA.tr("Drive_HelpName"),
         name = function()
             local on = DR.isOn()
-            return "Driving help: " .. (on and "on" or "off") .. ". While you drive, a low blip means steer left, a high "
-                .. "blip steer right; things in your path are said. {Square} turns it " .. (on and "off" or "on")
+            return ZA.tr(on and "Drive_HelpOn" or "Drive_HelpOff")
         end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()
             local s = settings()
             s.driveOff = not (s.driveOff == true)
-            ZA.say("Driving help " .. (s.driveOff and "off" or "on") .. ".")
+            ZA.say(ZA.tr(s.driveOff and "Drive_SwitchedOff" or "Drive_SwitchedOn"))
         end,
     })
 end)

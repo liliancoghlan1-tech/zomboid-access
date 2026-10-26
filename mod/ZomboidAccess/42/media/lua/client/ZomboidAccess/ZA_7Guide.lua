@@ -21,9 +21,9 @@ end
 
 function G.start()
     local e = S.current()
-    if not e then ZA.say("Nothing selected. Use Page Down to pick something first."); return end
-    if not S.alive(e) then ZA.say(S.entryName(e) .. " is gone."); return end
-    if e.noWhere then ZA.say("That's about you; pick a place in another category."); return end
+    if not e then ZA.say(ZA.tr("Guide_Nothing")); return end
+    if not S.alive(e) then ZA.say(ZA.tr("Guide_Gone", S.entryName(e))); return end
+    if e.noWhere then ZA.say(ZA.tr("Guide_AboutYou")); return end
     if ZA.W and ZA.W.action then ZA.W.stop(true) end
     local p = getPlayer()
     G.entry = e
@@ -34,14 +34,12 @@ function G.start()
     local w, d, dz = S.where(x, y, z)
     G.lastDir = S.direction(x - p:getX(), y - p:getY())
     G.lastBand = math.floor(d / 5)
-    local extra = ""
-    if dz ~= 0 then extra = " It's on another floor: find the stairs first." end
     ZA.log("[ZA] guide to " .. e.key)
-    ZA.say("Guiding you to " .. S.entryName(e) .. ", " .. w .. "." .. extra .. " Hold {Triangle}, or Shift End, to stop.")
+    ZA.say(ZA.tr(dz ~= 0 and "Guide_StartFloor" or "Guide_Start", S.entryName(e), w))
 end
 
 function G.toggle()
-    if G.entry then G.stop("Guide off.") else G.start() end
+    if G.entry then G.stop(ZA.tr("Guide_Off")) else G.start() end
 end
 
 local function beep(x, y, z)
@@ -59,7 +57,7 @@ function G.tick()
     if not e then return end
     local p = getPlayer()
     if not p or p:isDead() then G.entry = nil; return end
-    if not S.alive(e) then G.stop(S.entryName(e) .. " is gone. Guide off."); return end
+    if not S.alive(e) then G.stop(ZA.tr("Guide_GoneOff", S.entryName(e))); return end
     local t = now()
     -- a zombie close by: say it once (and again if it goes away and comes back)
     if t >= (G.nextThreatCheck or 0) then
@@ -67,7 +65,7 @@ function G.tick()
         local zz = S.nearestThreat(6, 2.5)
         if zz and zz ~= G.warned then
             G.warned = zz
-            ZA.say("Careful! " .. S.threatText(zz) .. ".")
+            ZA.say(ZA.tr("Guide_Careful", S.threatText(zz)))
             G.lastSaid = t
         elseif not zz then
             G.warned = nil
@@ -81,7 +79,7 @@ function G.tick()
     local reach = e.far and (e.key:find("|town|", 1, true) and 80 or 3) or 1.6
     if (sameFloor or e.far) and d <= reach then
         ZA.log("[ZA] guide arrived " .. e.key)
-        G.stop("Arrived: " .. S.entryName(e) .. ". Guide off.")
+        G.stop(ZA.tr("Guide_Arrived", S.entryName(e)))
         return
     end
 
@@ -105,7 +103,7 @@ function G.tick()
         if t - G.pendingSince >= 500 and t - G.lastSaid >= 1200 then
             G.lastDir, G.lastSaid = dir, t
             G.lastBand = math.floor(d / 5)
-            ZA.say(dir .. ", " .. math.floor(d + 0.5))
+            ZA.say(ZA.tr("Guide_DirDist", dir, math.floor(d + 0.5)))
         end
     else
         G.pendingDir = nil
@@ -113,7 +111,8 @@ function G.tick()
         local band = math.floor(d / 5)
         if band < (G.lastBand or band) and t - G.lastSaid >= 1200 then
             G.lastBand, G.lastSaid = band, t
-            ZA.say(math.floor(d + 0.5) .. " metres")
+            local m = math.floor(d + 0.5)
+            ZA.say(ZA.tr(m == 1 and "Guide_MetreOne" or "Guide_Metres", m))
         end
     end
 
@@ -127,7 +126,7 @@ function G.tick()
         G.stuckSince = G.stuckSince or t
         if not G.saidBlocked and t - G.stuckSince > 800 then
             G.saidBlocked = true
-            ZA.say("Blocked.")
+            ZA.say(ZA.tr("Guide_Blocked"))
         end
     else
         G.stuckSince = nil

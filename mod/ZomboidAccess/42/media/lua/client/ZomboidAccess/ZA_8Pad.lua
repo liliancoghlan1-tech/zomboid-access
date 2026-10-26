@@ -25,14 +25,14 @@ local function inWorld(c)
     return jd and jd.player ~= nil and jd.focus == nil and S.inWorld() and not jd.isDoingNavigation
 end
 
-P.layerHelp = "D-pad up and down: things. Left and right: categories. {Triangle}: again, hold for guide. {Square}: walk there, hold to use it. {Circle}: scanner off."
+P.layerHelp = ZA.tr("Pad_LayerHelp")
 
 function P.setLayer(on)
     P.layer = on
     if on then
-        ZA.say("Scanner on. " .. P.layerHelp)
+        ZA.say(ZA.tr("Pad_ScannerOn", P.layerHelp))
     else
-        ZA.say("Scanner off.")
+        ZA.say(ZA.tr("Pad_ScannerOff"))
     end
 end
 
@@ -155,28 +155,28 @@ function P.worldHelp()
     local parts = {}
     local r = ZA.RT and ZA.RT.route
     if v and v:isDriver(p) then
-        table.insert(parts, "Driving. {R2} accelerates, {L2} reverses, {Circle} brakes, the left stick steers. A low blip: steer left, a high blip: steer right")
+        table.insert(parts, ZA.tr("Pad_Driving"))
         if r and r.mode == "auto" then
-            table.insert(parts, "Autodrive is on: brake with {Circle} and the car is yours again")
+            table.insert(parts, ZA.tr("Pad_Autodrive"))
         elseif r then
-            table.insert(parts, "Route guidance is on: with the scanner on, {Square} stops it")
+            table.insert(parts, ZA.tr("Pad_RouteOn"))
         end
         if P.layer then
-            table.insert(parts, "Scanner on. " .. P.layerHelp)
-            if not r then table.insert(parts, "Pick a place: {Square} for route guidance, hold {Square} to drive there by itself") end
-            table.insert(parts, "With the scanner off: hold D-pad up for the car's menu, and cruise control is hold {Square} with D-pad up or down, tap {Square} for on or off")
+            table.insert(parts, ZA.tr("Pad_ScannerOn", P.layerHelp))
+            if not r then table.insert(parts, ZA.tr("Pad_PickPlace")) end
+            table.insert(parts, ZA.tr("Pad_DrivingScannerOff"))
         else
-            table.insert(parts, "Hold D-pad up: the car's menu, to start the engine, headlights, or get out. Cruise control: hold {Square} and press D-pad up or down to set the speed, tap {Square} to switch it on or off")
-            if not r then table.insert(parts, "Tap {Share} for the scanner, then pick a place to drive to") end
+            table.insert(parts, ZA.tr("Pad_DrivingMenu"))
+            if not r then table.insert(parts, ZA.tr("Pad_TapShareDrive")) end
         end
     elseif v then
-        table.insert(parts, "You're a passenger. {Cross} gets out")
-        table.insert(parts, P.layer and ("Scanner on. " .. P.layerHelp) or "Tap {Share}: scanner on")
+        table.insert(parts, ZA.tr("Pad_Passenger"))
+        table.insert(parts, P.layer and ZA.tr("Pad_ScannerOn", P.layerHelp) or ZA.tr("Pad_TapShare"))
     elseif P.layer then
-        table.insert(parts, "Scanner on. " .. P.layerHelp)
+        table.insert(parts, ZA.tr("Pad_ScannerOn", P.layerHelp))
     else
-        table.insert(parts, "Scanner off. Tap {Share}: scanner on. Tap {Share} twice: quick status")
-        table.insert(parts, "The left stick walks, the right stick aims, {R2} attacks, {L2} shoves, {Cross} interacts, {Triangle} opens your inventory")
+        table.insert(parts, ZA.tr("Pad_ScannerOffHelp"))
+        table.insert(parts, ZA.tr("Pad_OnFoot"))
     end
     for i, t in ipairs(parts) do parts[i] = t:gsub("[%.%s]+$", "") end
     ZA.say(table.concat(parts, ". ") .. ".")

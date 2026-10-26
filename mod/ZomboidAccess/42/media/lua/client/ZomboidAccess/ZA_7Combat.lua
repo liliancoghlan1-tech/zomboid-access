@@ -21,7 +21,7 @@ CB.saidKilled = {}
 function CB.killed(z)
     if CB.saidKilled[z] then return end
     CB.saidKilled[z] = true
-    ZA.say("Killed")
+    ZA.say(ZA.tr("Combat_Killed"))
 end
 
 local function me(c) return c ~= nil and c == getPlayer() end
@@ -41,7 +41,7 @@ local function onAttackFinished(player, weapon)
     local s = CB.swing
     CB.swing = nil
     if not s or not s.hit then
-        ZA.say("Miss")
+        ZA.say(ZA.tr("Combat_Miss"))
         return
     end
     local z = s.hit
@@ -68,7 +68,7 @@ function CB.tick()
         else
             local down = false
             pcall(function() down = z:isOnFloor() or z:isKnockedDown() end)
-            ZA.say(down and "Hit, down" or "Hit")
+            ZA.say(down and ZA.tr("Combat_HitDown") or ZA.tr("Combat_Hit"))
         end
     end
 
@@ -116,7 +116,7 @@ function CB.tick()
     found = found and found.z
     if found and found ~= CB.inReach then
         CB.inReach = found
-        ZA.urgent("In reach")
+        ZA.urgent(ZA.tr("Combat_InReach"))
     elseif not found then
         CB.inReach = nil
     end
@@ -126,7 +126,7 @@ end
 function CB.firstChase()
     if CB.hintGiven then return "" end
     CB.hintGiven = true
-    return " To fight: hold the right stick towards it to aim (or stand still with Lock-on on), then {R2} all the way swings, {L2} shoves it away. A way out beeps with two rising whistles."
+    return " " .. ZA.tr("Combat_FirstChase")
 end
 
 if not CB.hooked then

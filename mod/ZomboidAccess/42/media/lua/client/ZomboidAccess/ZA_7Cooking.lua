@@ -29,25 +29,38 @@ local function follow(item, c)
     local ct, mtc, mtb = item:getCookingTime(), item:getMinutesToCook(), item:getMinutesToBurn()
     local say
     if item:isBurnt() then
-        if stage < 5 then stage, say = 5, name .. " has burnt" end
+        if stage < 5 then stage, say = 5, ZA.tr("Cooking_Burnt", name) end
     elseif item:isCooked() then
         local toBurn = (mtb > ct) and (ct - mtc) / math.max(1, mtb - mtc) or 1
         if toBurn >= 0.5 and stage < 4 then
-            stage, say = 4, name .. " is about to burn! Take it out"
+            stage, say = 4, ZA.tr("Cooking_AboutToBurn", name)
         elseif stage < 3 then
-            stage, say = 3, name .. " is cooked: take it out before it burns"
+            stage, say = 3, ZA.tr("Cooking_Cooked", name)
         end
     elseif ct > 0 and item:getHeat() > 1.6 then
         if ct >= mtc * 0.5 and stage < 2 then
-            stage, say = 2, name .. ", half cooked"
+            stage, say = 2, ZA.tr("Cooking_Half", name)
         elseif stage < 1 then
-            stage, say = 1, name .. " cooking, in the " .. where(c)
+            stage, say = 1, ZA.tr("Cooking_Cooking", name, where(c))
         end
     end
+    local wasCooked = (CK.seen[id] or 0) >= 3
     CK.seen[id] = stage
     if say then
         if stage >= 3 then ZA.say(say) else ZA.queue(say) end
     end
+    -- just cooked (or found already cooked): the ding goes with the words (Marc, 2026-10-18)
+    if not wasCooked and (stage == 3 or stage == 4) then CK.ding = true end
+end
+
+-- A microwave's ding, heard wherever you are (za_cooked.wav, ElevenLabs, 2026-10-18, prompt: "single microwave
+-- oven ding when cooking is done, one clear bright metallic bell ding, close-up, dry, no reverb, no background
+-- noise", 1.5 s, influence 0.7, first of three, pcm_48000), so you don't miss it while busy with something else.
+local function ding(p)
+    pcall(function()
+        getSoundManager():PlayWorldSoundImpl("ZA_Cooked", false, math.floor(p:getX()), math.floor(p:getY()),
+            math.floor(p:getZ()), 0, 40, 1, false)
+    end)
 end
 
 function CK.tick()
@@ -80,6 +93,8 @@ function CK.tick()
             end
         end
     end
+    -- one ding for everything that got cooked in this look round
+    if CK.ding then CK.ding = false; ding(p) end
 end
 if not CK.ticking then
     CK.ticking = true

@@ -17,8 +17,8 @@ for _, c in ipairs(S.categories) do if c.key == "finds" then inserted = true end
 if not inserted then
     for i, c in ipairs(S.categories) do
         if c.key == "loot_other" then
-            table.insert(S.categories, i + 1, { key = "finds", name = "Finds",
-                none = "nothing found. Hold {Share} and choose Enable search mode, then walk slowly" })
+            table.insert(S.categories, i + 1, { key = "finds", name = ZA.tr("ScanForage_Cat"),
+                none = ZA.tr("ScanForage_None") })
             break
         end
     end
@@ -42,10 +42,10 @@ function FG.name(icon)
             end
         end
     end)
-    if not n or n == "" then n = "Something you can't make out yet" end
+    if not n or n == "" then n = ZA.tr("ScanForage_Unknown") end
     pcall(function()
         local c = icon.itemList and icon.itemList:size() or 1
-        if c > 1 then n = n .. ", " .. c end
+        if c > 1 then n = ZA.tr("ScanForage_Count", n, c) end
     end)
     return n
 end
@@ -80,9 +80,9 @@ end)
 -- hold Square / Delete on a find: pick it up (ZA_6WalkUse sends finds here)
 function FG.pickUp(e)
     local ok, err = pcall(function() e.icon:doForage(nil, nil, nil, nil) end)
-    if not ok then print("[ZA] forage error: " .. tostring(err)); ZA.say("Couldn't pick that up.") return end
+    if not ok then print("[ZA] forage error: " .. tostring(err)); ZA.say(ZA.tr("ScanForage_PickFail")) return end
     FG.picked = (FG.picked or 0) + 1
-    ZA.say("Picking up " .. FG.name(e.icon) .. ".")
+    ZA.say(ZA.tr("ScanForage_Picking", FG.name(e.icon)))
 end
 
 -- ---------- said by itself ----------
@@ -98,8 +98,7 @@ function FG.tick()
     if not m then return end
     local on = m.isSearchMode == true
     if FG.on ~= nil and on ~= FG.on then
-        ZA.say(on and "Search mode on. Walk slowly; what you notice is said, and listed in the scanner under Finds."
-            or "Search mode off.")
+        ZA.say(on and ZA.tr("ScanForage_ModeOn") or ZA.tr("ScanForage_ModeOff"))
     end
     FG.on = on
     if not on then return end
@@ -107,14 +106,14 @@ function FG.tick()
     local sp = m.isSpotting
     if sp and sp ~= FG.spotting and not FG.said[sp] and not FG.sensed[sp] then
         FG.sensed[sp] = true
-        ZA.queue("You sense something nearby")
+        ZA.queue(ZA.tr("ScanForage_Sense"))
     end
     FG.spotting = sp
     for _, f in ipairs(seenIcons()) do
         if not FG.said[f.icon] then
             FG.said[f.icon] = true
             local x, y, z = f.icon.xCoord + 0.5, f.icon.yCoord + 0.5, f.icon.zCoord or 0
-            ZA.queue("Noticed: " .. FG.name(f.icon) .. ", " .. (S.where(x, y, z)))
+            ZA.queue(ZA.tr("ScanForage_Noticed", FG.name(f.icon), (S.where(x, y, z))))
         end
     end
 end

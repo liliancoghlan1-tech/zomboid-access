@@ -9,8 +9,8 @@ ZA.V = ZA.V or {}
 local V = ZA.V
 V.file = "ZomboidAccess_voices.txt"
 V.channels = {
-    { id = "speech", title = "Zomboid Access voice" },
-    { id = "radio", title = "Radio voice", sample = "This is the radio. Can you hear me?" },
+    { id = "speech", title = ZA.tr("Voices_Title_Speech") },
+    { id = "radio", title = ZA.tr("Voices_Title_Radio"), sample = ZA.tr("Voices_RadioSample") },
 }
 
 -- Fields between tabs, keeping empty ones (a screen reader has no voice name).
@@ -24,7 +24,7 @@ end
 function V.read()
     local r = getFileReader(V.file, false)
     if not r then return nil end
-    local st = { reader = "screen reader", voices = {}, set = {} }
+    local st = { reader = ZA.tr("Voices_ReaderDefault"), voices = {}, set = {} }
     local line = r:readLine()
     while line do
         local f = split(line)
@@ -42,7 +42,7 @@ end
 
 -- The drop-down's entries: the screen reader first, then every voice.
 local function choices(st)
-    local list = { { engine = "screen reader", voice = "", text = "Screen reader (" .. st.reader .. ")" } }
+    local list = { { engine = "screen reader", voice = "", text = ZA.tr("Voices_ScreenReader", st.reader) } }
     for _, v in ipairs(st.voices) do
         table.insert(list, { engine = v.engine, voice = v.voice, text = v.engine .. ": " .. v.voice })
     end
@@ -92,8 +92,8 @@ function V.addRows(self)
 
     -- Positions in lists and menus ("2 of 25"): on unless turned off here; changes at once.
     local hgt = MainOptions.style.buttonHeight
-    local positions = self:addYesNo(splitpoint, y, hgt, hgt, "Say positions in lists, like 2 of 25")
-    positions.zaLabel = "Say positions in lists, like 2 of 25"
+    local positions = self:addYesNo(splitpoint, y, hgt, hgt, ZA.tr("Voices_Positions"))
+    positions.zaLabel = ZA.tr("Voices_Positions")
     local po = GameOption:new("zaPositions", positions)
     function po.toUI() positions:setSelected(1, ZA.settings.positions ~= false) end
     function po.apply() ZA.setSetting("positions", positions:isSelected(1)) end
@@ -104,7 +104,7 @@ function V.addRows(self)
     local st = V.read()
     if not st then
         self:addDescription(splitpoint - 200, y,
-            "Voices can be chosen here when the game is started with the speech bridge (the installer sets this up in Steam).")
+            ZA.tr("Voices_NoBridge"))
     else
         local list = choices(st)
         local names = {}
@@ -113,10 +113,10 @@ function V.addRows(self)
             local row = { id = ch.id, sample = ch.sample, choices = list }
             row.combo = self:addCombo(splitpoint, y, comboWidth, 20, ch.title, names, 1)
             row.combo.zaLabel = ch.title
-            row.rate = self:addSlider(splitpoint, y, comboWidth, ch.title .. " speed", 0, 100, 5, 50)
-            row.rate.zaLabel = ch.title .. " speed (SAPI and OneCore voices)"
-            row.volume = self:addSlider(splitpoint, y, comboWidth, ch.title .. " volume", 0, 100, 5, 100)
-            row.volume.zaLabel = ch.title .. " volume (SAPI and OneCore voices)"
+            row.rate = self:addSlider(splitpoint, y, comboWidth, ZA.tr("Voices_Speed", ch.title), 0, 100, 5, 50)
+            row.rate.zaLabel = ZA.tr("Voices_SpeedLabel", ch.title)
+            row.volume = self:addSlider(splitpoint, y, comboWidth, ZA.tr("Voices_Volume", ch.title), 0, 100, 5, 100)
+            row.volume.zaLabel = ZA.tr("Voices_VolumeLabel", ch.title)
             option(self, "zaVoice_" .. ch.id, row.combo, row)
             option(self, "zaVoiceRate_" .. ch.id, row.rate, row)
             option(self, "zaVoiceVolume_" .. ch.id, row.volume, row)

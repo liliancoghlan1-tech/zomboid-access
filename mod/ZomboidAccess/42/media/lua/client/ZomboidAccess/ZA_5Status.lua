@@ -4,7 +4,8 @@
 -- Said by itself:
 --   a moodle appearing or getting worse ("Hungry", "Panic"), and going away ("Hungry gone")
 --   a new injury, at once ("Bitten on the right hand!")
--- Moodles, injuries and body parts use the game's own English words.
+-- Moodles, injuries and body parts use the game's own words, in the game's language (they come from the game's
+-- Java side: Moodles.getMoodleDisplayString and BodyPartType.getDisplayName go through its Translator).
 
 ZA.ST = ZA.ST or {}
 local ST = ZA.ST
@@ -73,7 +74,7 @@ ST.injuries = injuries
 
 function ST.healthWords(p)
     local h = math.floor(p:getBodyDamage():getHealth() + 0.5)
-    return "Health " .. h .. " of 100"
+    return ZA.tr("Status_Health", h)
 end
 
 function ST.weightWords(p)
@@ -81,9 +82,8 @@ function ST.weightWords(p)
     pcall(function() carried = p:getInventory():getCapacityWeight() end)
     pcall(function() max = p:getMaxWeight() end)
     if not carried then return nil end
-    local s = string.format("Carrying %.1f", carried)
-    if max then s = s .. string.format(" of %.0f", max) end
-    return s
+    if max then return ZA.tr("Status_CarryingOf", ZA.dec(carried, "%.1f"), ZA.dec(max, "%.0f")) end
+    return ZA.tr("Status_Carrying", ZA.dec(carried, "%.1f"))
 end
 
 -- Insert: the short version.
@@ -92,9 +92,9 @@ function ST.summary()
     if not p then return end
     local parts = { ST.healthWords(p) }
     local inj = injuries(p)
-    if #inj == 0 then table.insert(parts, "no injuries")
+    if #inj == 0 then table.insert(parts, ZA.tr("Status_NoInjuries"))
     else
-        for _, j in ipairs(inj) do table.insert(parts, j.part .. ": " .. table.concat(j.list, ", "):lower()) end
+        for _, j in ipairs(inj) do table.insert(parts, ZA.tr("Status_PartList", j.part, table.concat(j.list, ", "):lower())) end
     end
     local bad = {}
     for _, m in ipairs(moodles(p)) do if not m.good then table.insert(bad, m.text) end end
@@ -118,7 +118,7 @@ table.insert(S.builders, function(lists)
             for _, k in ipairs(injuries(getPlayer())) do
                 if k.key == part then
                     -- the injuries, then what each one means
-                    local s = k.part .. ": " .. table.concat(k.list, ", "):lower() .. "."
+                    local s = ZA.tr("Status_PartList", k.part, table.concat(k.list, ", "):lower()) .. "."
                     for _, w in ipairs(k.list) do
                         local h = ST.injuryExplain and ST.injuryExplain(w)
                         if h then s = s .. " " .. w .. ": " .. h end
@@ -126,27 +126,27 @@ table.insert(S.builders, function(lists)
                     return s
                 end
             end
-            return j.part .. ": healed"
+            return ZA.tr("Status_Healed", j.part)
         end)
     end
-    if #injuries(p) == 0 then add("injuries", function() return "No injuries" end) end
+    if #injuries(p) == 0 then add("injuries", function() return ZA.tr("Status_NoInjuriesCap") end) end
     for _, m in ipairs(moodles(p)) do
         local key = m.key
         add("moodle " .. key, function()
             for _, k in ipairs(moodles(getPlayer())) do
                 if k.key == key then
-                    local s = k.text .. (k.good and ", good" or "") .. "."
+                    local s = (k.good and ZA.tr("Status_MoodleGood", k.text) or k.text) .. "."
                     if k.desc ~= "" then s = s .. " " .. k.desc end
                     local h = ST.moodleHelp and ST.moodleHelp[k.key]
                     if h then s = s .. " " .. h end
                     return s
                 end
             end
-            return m.text .. ": gone"
+            return ZA.tr("Status_MoodleGone", m.text)
         end)
     end
-    add("weight", function() return ST.weightWords(getPlayer()) or "Carrying: unknown" end)
-    add("time", function() return "It's " .. ZA.timeWords() end)
+    add("weight", function() return ST.weightWords(getPlayer()) or ZA.tr("Status_CarryingUnknown") end)
+    add("time", function() return ZA.tr("Status_Time", ZA.timeWords()) end)
 end)
 
 -- ---------- said by itself ----------
@@ -176,10 +176,10 @@ function ST.check()
         end
         if #order > 0 then
             local phrases = {}
-            for _, part in ipairs(order) do table.insert(phrases, part .. ": " .. table.concat(byPart[part], ", ")) end
+            for _, part in ipairs(order) do table.insert(phrases, ZA.tr("Status_PartList", part, table.concat(byPart[part], ", "))) end
             local t = table.concat(phrases, ". ")
             ZA.log("[ZA] status: " .. t)
-            ZA.say(t .. "!")
+            ZA.say(ZA.tr("Status_Exclaim", t))
         end
         local changes = {}
         for k, m in pairs(now) do
@@ -187,7 +187,7 @@ function ST.check()
             if not old or m.level > old.level then table.insert(changes, m.text) end
         end
         for k, old in pairs(ST.lastMoodles) do
-            if not now[k] then table.insert(changes, old.text .. " gone") end
+            if not now[k] then table.insert(changes, ZA.tr("Status_MoodleGoneNews", old.text)) end
         end
         if #changes > 0 then
             local t = table.concat(changes, ". ")

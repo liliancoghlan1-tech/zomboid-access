@@ -42,18 +42,18 @@ function FI.tick()
     if st ~= FI.state then
         local was = FI.state
         FI.state = st
-        if st == "Idle" and was ~= "Idle" then ZA.say("Aiming at water. {R2} casts.")
+        if st == "Idle" and was ~= "Idle" then ZA.say(ZA.tr("Fishing_Aiming"))
         elseif st == "Wait" and (was == "Cast" or was == "Idle") then
             local d = bob and math.floor(IsoUtils.DistanceTo(getPlayer():getX(), getPlayer():getY(), bob:getX(), bob:getY()) + 0.5)
-            ZA.say("Line out" .. (d and (", " .. d .. " metres") or "") .. ". Wait for a bite.")
+            ZA.say(d and ZA.tr(d == 1 and "Fishing_LineOutDistOne" or "Fishing_LineOutDist", d) or ZA.tr("Fishing_LineOut"))
         elseif st == "PickupFish" then
             FI.landed = (FI.landed or 0) + 1
-            ZA.say("Landed it. It goes in your bag.")
+            ZA.say(ZA.tr("Fishing_Landed"))
         elseif (st == "None" or st == nil) and (was == "Wait" or was == "ReelIn" or was == "ReelOut") then
             -- the line broke if the rod in your hands isn't a whole rod any more
             local rodNow = getPlayer():getPrimaryHandItem()
-            if not (rodNow and rodNow:hasTag(ItemTag.FISHING_ROD)) then ZA.say("The line broke.")
-            else ZA.say("Stopped fishing.") end
+            if not (rodNow and rodNow:hasTag(ItemTag.FISHING_ROD)) then ZA.say(ZA.tr("Fishing_LineBroke"))
+            else ZA.say(ZA.tr("Fishing_Stopped")) end
         end
         FI.lastDist = nil
     end
@@ -62,9 +62,9 @@ function FI.tick()
     if fish ~= FI.fish then
         if fish and not FI.fish then
             play("ZA_Bite")
-            ZA.say("Bite! Turn the right stick clockwise in circles to reel.")
+            ZA.say(ZA.tr("Fishing_Bite"))
         elseif FI.fish and not fish and (st == "Wait" or st == "ReelIn" or st == "ReelOut") then
-            ZA.say("It got away.")
+            ZA.say(ZA.tr("Fishing_GotAway"))
         end
         FI.fish = fish
     end
@@ -74,16 +74,16 @@ function FI.tick()
         local ok, ten = pcall(function() return rod:getTension() end)
         if ok and ten then
             if ten > 0.6 then
-                ZA.say("Tight! Ease off"); FI.nextTension = t + 800
+                ZA.say(ZA.tr("Fishing_Tight")); FI.nextTension = t + 800
             elseif ten < -0.6 and fish then
-                ZA.say("Slack, keep reeling"); FI.nextTension = t + 800
+                ZA.say(ZA.tr("Fishing_Slack")); FI.nextTension = t + 800
             end
         end
     end
     if bob and fish then
         local d = IsoUtils.DistanceTo(getPlayer():getX(), getPlayer():getY(), bob:getX(), bob:getY())
         local band = math.floor(d / 2)
-        if FI.lastDist and band < FI.lastDist and d > 1 then ZA.queue(math.floor(d + 0.5) .. " metres") end
+        if FI.lastDist and band < FI.lastDist and d > 1 then local m = math.floor(d + 0.5); ZA.queue(ZA.tr(m == 1 and "Fishing_MetreOne" or "Fishing_Metres", m)) end
         FI.lastDist = band
     end
 end

@@ -28,9 +28,10 @@ local C = TU.challenge
 
 C.Add = function()
     addChallenge(C)
-    C.name = "Zomboid Access Tutorial"
-    C.description = "A quiet house by the river, no zombies until a lesson brings one, and a guide on the radio who "
-        .. "talks you through the game and the accessibility mod, one thing at a time."
+    -- the name shown in the Challenges list, in the game's language (C.gameMode above stays English: it is the id
+    -- the game keeps in the save, and TU.tick looks for it)
+    C.name = ZA.tr("Tutorial_ChallengeName")
+    C.description = ZA.tr("Tutorial_ChallengeDesc")
 end
 
 C.OnInitWorld = function()
@@ -73,12 +74,11 @@ function TU.startFromMainMenu()
     local ms = MainScreen and MainScreen.instance
     if not ms or not ms.soloScreen then return false end
     -- protected: the character screen opens at once, and its first words would cut this off
-    ZA.protected("The game's own tutorial turns all mods off, so Zomboid Access would go silent. "
-        .. "Starting the Zomboid Access Tutorial instead.")
+    ZA.protected(ZA.tr("Tutorial_Redirect"))
     ActiveMods.getById("currentGame"):copyFrom(ActiveMods.getById("default"))
     local ng = ms.soloScreen
     ng:setVisible(true, JoypadState.getMainMenuJoypad())
-    C.name = C.name or "Zomboid Access Tutorial"
+    C.name = C.name or ZA.tr("Tutorial_ChallengeName")
     ng.selectedItem = { data = { mode = C.name, challenge = C } }
     ng:clickPlay()
     return true
@@ -389,7 +389,7 @@ function TU.protect(step)
         bd:RestoreToFullHealth()
         if not TU.saidHealed or getTimestampMs() - TU.saidHealed > 8000 then
             TU.saidHealed = getTimestampMs()
-            ZA.queue("Healed. Here, they can't really hurt you.")
+            ZA.queue(ZA.tr("Tutorial_Healed"))
         end
     end
 end
@@ -594,7 +594,7 @@ function TU.markLaneEnd()
         end
     end
     if not far then return end
-    local m = { name = "End of the lane", x = far[1] + 0.5, y = far[2] + 0.5, z = 0 }
+    local m = { name = ZA.tr("Tutorial_LaneEnd"), x = far[1] + 0.5, y = far[2] + 0.5, z = 0 }
     table.insert(ZA.MK.all(), m)
     S.builtAt = -1e9
     TU.laneEnd = m
@@ -657,7 +657,7 @@ function TU.ensureWeapon()
     if not bat then return end
     p:setPrimaryHandItem(bat)
     if bat:isTwoHandWeapon() then p:setSecondaryHandItem(bat) end
-    ZA.queue("The bat is back in your hands.")
+    ZA.queue(ZA.tr("Tutorial_BatBack"))
 end
 
 function TU.enter(i)
@@ -687,7 +687,11 @@ function TU.tick()
         -- a tutorial world (the game keeps the challenge's game mode in the save): begin, once
         local mode = ""
         pcall(function() mode = getWorld():getGameMode() end)
-        if mode == C.gameMode then st.active, st.started, st.step = true, true, 0 end
+        -- the Challenges list starts the game under the challenge's shown name, which is translated: accept the
+        -- English id and the name in the game's language
+        if mode == C.gameMode or (C.name and mode == C.name) or mode == ZA.tr("Tutorial_ChallengeName") then
+            st.active, st.started, st.step = true, true, 0
+        end
         st.started = true
     end
     if not st.active then return end
@@ -765,8 +769,8 @@ table.insert(S.builders, function(lists)
     if not TU.active() then return end
     local p = getPlayer()
     table.insert(lists.you, {
-        cat = "you", key = "you|radio", noWhere = true, order = 0, baseName = "Radio",
-        name = function() return "Radio: say that again. {Square}" end,
+        cat = "you", key = "you|radio", noWhere = true, order = 0, baseName = ZA.tr("Tutorial_RadioName"),
+        name = function() return ZA.tr("Tutorial_RadioRepeat") end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()
             local st = state()
@@ -800,11 +804,13 @@ end
 -- "Radio: choose a lesson" in the You list: a menu of the lessons; picking one starts it there (to repeat one, or to
 -- reach new lessons from an older save).
 TU.lessons = {
-    { "The scanner and doors", "scannerOn" }, { "Looting", "lootFind" }, { "Eating and drinking", "eat" },
-    { "How you're doing", "status" }, { "Injuries and healing", "hurt" }, { "Fighting", "weapon" },
-    { "Lock-on and getting away", "lockOnSwitch" }, { "Cooking", "cookIntro" }, { "Foraging", "forageOn" },
-    { "Farming", "farmIntro" }, { "Fishing", "fishBait" },
-    { "Crafting and building", "craft" }, { "Driving", "carIntro" },
+    { ZA.tr("Tutorial_LessonScanner"), "scannerOn" }, { ZA.tr("Tutorial_LessonLooting"), "lootFind" },
+    { ZA.tr("Tutorial_LessonEating"), "eat" }, { ZA.tr("Tutorial_LessonStatus"), "status" },
+    { ZA.tr("Tutorial_LessonInjuries"), "hurt" }, { ZA.tr("Tutorial_LessonFighting"), "weapon" },
+    { ZA.tr("Tutorial_LessonLockOn"), "lockOnSwitch" }, { ZA.tr("Tutorial_LessonCooking"), "cookIntro" },
+    { ZA.tr("Tutorial_LessonForaging"), "forageOn" }, { ZA.tr("Tutorial_LessonFarming"), "farmIntro" },
+    { ZA.tr("Tutorial_LessonFishing"), "fishBait" }, { ZA.tr("Tutorial_LessonCrafting"), "craft" },
+    { ZA.tr("Tutorial_LessonDriving"), "carIntro" },
 }
 function TU.chooseLesson()
     local p = getPlayer()
@@ -815,7 +821,7 @@ function TU.chooseLesson()
     for _, l in ipairs(TU.lessons) do
         menu:addOption(l[1], nil, function()
             TU.clearSpawned()
-            TU.radio("Right. " .. l[1] .. ".")
+            TU.radio(ZA.tr("Tutorial_LessonChosen", l[1]))
             TU.doneAt = nil
             TU.jump(l[2])
         end)
@@ -830,8 +836,8 @@ table.insert(S.builders, function(lists)
     if not TU.active() then return end
     local p = getPlayer()
     table.insert(lists.you, {
-        cat = "you", key = "you|lessons", noWhere = true, order = 0.5, baseName = "Lessons",
-        name = function() return "Radio: choose a lesson. {Square}" end,
+        cat = "you", key = "you|lessons", noWhere = true, order = 0.5, baseName = ZA.tr("Tutorial_LessonsName"),
+        name = function() return ZA.tr("Tutorial_ChooseLesson") end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function() TU.chooseLesson() end,
     })

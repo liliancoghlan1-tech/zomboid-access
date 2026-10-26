@@ -10,7 +10,7 @@ if forceChangeState and not ZA.wrappedState then
     ZA.wrappedState = true
     local orig = forceChangeState
     forceChangeState = function(state, ...)
-        ZA.say("Loading the world. This takes a minute or two. When it's ready you'll hear: the world has loaded, press {Cross} to begin.")
+        ZA.say(ZA.tr("World_Loading"))
         return orig(state, ...)
     end
 end
@@ -35,21 +35,26 @@ if MainScreen and MainScreen.continueLatestSave and not ZA.wrappedContinue then
         local ok, err = pcall(orig, ...)
         if not ok then
             print("[ZA] continue failed: " .. tostring(err))
-            ZA.say("Couldn't continue that save: the game ran into an error. Try Load instead.")
+            ZA.say(ZA.tr("World_ContinueFailed"))
         end
     end
 end
 
-local months = { "January", "February", "March", "April", "May", "June", "July", "August",
-    "September", "October", "November", "December" }
-
 function ZA.timeWords()
     local gt = getGameTime()
     local h, m = gt:getHour(), gt:getMinutes()
+    local month, day = ZA.tr("World_Month" .. (gt:getMonth() + 1)), gt:getDay() + 1
+    -- the clock goes by the language: 24 hours in French, AM and PM in English
+    if ZA.tr("World_Use24h") == "1" then
+        -- the first of the month has its own word in French: le 1er juillet
+        if day == 1 then day = ZA.tr("World_DayFirst") end
+        if m == 0 then return ZA.tr("World_Time24Hour", h, day, month) end
+        return ZA.tr("World_Time24Min", h, string.format("%02d", m), day, month)
+    end
     local ampm = h < 12 and "AM" or "PM"
     local h12 = h % 12; if h12 == 0 then h12 = 12 end
-    local t = m == 0 and (h12 .. " " .. ampm) or string.format("%d:%02d %s", h12, m, ampm)
-    return t .. ", " .. months[gt:getMonth() + 1] .. " " .. (gt:getDay() + 1)
+    if m == 0 then return ZA.tr("World_Time12Hour", h12, ampm, month, day) end
+    return ZA.tr("World_Time12Min", h12, string.format("%02d", m), ampm, month, day)
 end
 
 Events.OnGameStart.Add(function()
@@ -57,14 +62,18 @@ Events.OnGameStart.Add(function()
     local who = ""
     if p and p:getDescriptor() then
         local d = p:getDescriptor()
-        who = " as " .. ZA.clean((d:getForename() or "") .. " " .. (d:getSurname() or ""))
+        who = ZA.clean((d:getForename() or "") .. " " .. (d:getSurname() or ""))
     end
-    ZA.say("You're in the world" .. who .. ". It's " .. ZA.timeWords() .. ".")
+    if who ~= "" then
+        ZA.say(ZA.tr("World_InWorldAs", who, ZA.timeWords()))
+    else
+        ZA.say(ZA.tr("World_InWorld", ZA.timeWords()))
+    end
 end)
 
 -- The survival guide that opens on a new game.
-F.screens.SurvivalGuide = { name = "Survival guide" }
-F.screens.ISPostDeathUI = { name = "You died" }
+F.screens.SurvivalGuide = { name = ZA.tr("World_SurvivalGuide") }
+F.screens.ISPostDeathUI = { name = ZA.tr("World_YouDied") }
 -- The death screen shows its buttons only 3 seconds after you die (ISPostDeathUI.waitOver), and nothing moves the
 -- focus then, so they were never read: say them as they appear.
 local deathSaid = {}
@@ -78,18 +87,18 @@ ZA.onTick(function()
                 local btn, key = b[1], b[2]
                 if btn and btn:isVisible() then
                     local title = btn.title or (btn.getTitle and btn:getTitle()) or ""
-                    if title ~= "" then table.insert(parts, key .. ": " .. ZA.clean(title)) end
+                    if title ~= "" then table.insert(parts, ZA.tr("World_DiedButton", key, ZA.clean(title))) end
                 end
             end
-            ZA.say("You died. " .. table.concat(parts, ". "))
+            ZA.say(ZA.tr("World_DiedSay", table.concat(parts, ". ")))
         end
     end
 end)
-F.screens.ISBackButtonWheel = { name = "{Share} menu" }
+F.screens.ISBackButtonWheel = { name = ZA.tr("World_ShareMenu") }
 local origName = F.screenName
 function F.screenName(panel)
     if panel and panel.parent and panel.parent.Type == "SurvivalGuide" then
-        return "Survival guide: Up and Down read the topics"
+        return ZA.tr("World_SurvivalHint")
     end
     return origName(panel)
 end

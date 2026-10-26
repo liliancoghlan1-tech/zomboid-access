@@ -28,14 +28,16 @@ end
 
 -- ---------- finding ways out ----------
 
+-- name and how are keys, said through ZA.tr where they are used
 local kinds = {
-    door = { name = "Door", how = "go through, then {Cross} closes it behind you", bonus = -2, walk = "door" },
-    window = { name = "Window", how = "{Circle} climbs through", bonus = -1, walk = "door" },
-    frame = { name = "Empty window frame", how = "{Circle} climbs through", bonus = -1, walk = "door" },
-    tallfence = { name = "Tall fence", how = "{Circle} climbs over", bonus = -1, walk = "adjacent" },
-    fence = { name = "Low fence", how = "{Circle} hops over; zombies trip on it", bonus = 0, walk = "adjacent" },
-    vehicle = { name = "Vehicle", how = "get in", bonus = 2, walk = "vehicle" },
+    door = { name = "Escape_NameDoor", how = "Escape_HowDoor", bonus = -2, walk = "door" },
+    window = { name = "Escape_NameWindow", how = "Escape_HowClimbThrough", bonus = -1, walk = "door" },
+    frame = { name = "Escape_NameFrame", how = "Escape_HowClimbThrough", bonus = -1, walk = "door" },
+    tallfence = { name = "Escape_NameTallFence", how = "Escape_HowClimbOver", bonus = -1, walk = "adjacent" },
+    fence = { name = "Escape_NameLowFence", how = "Escape_HowHop", bonus = 0, walk = "adjacent" },
+    vehicle = { name = "Escape_NameVehicle", how = "Escape_HowGetIn", bonus = 2, walk = "vehicle" },
 }
+local function kindName(kind) return ZA.tr(kinds[kind].name) end
 
 local function classify(o)
     if instanceof(o, "IsoDoor") or (instanceof(o, "IsoThumpable") and o:isDoor()) then
@@ -137,21 +139,24 @@ end
 
 function ES.words(c)
     local k = kinds[c.kind]
-    local n = k.name
+    local n = kindName(c.kind)
     if c.kind == "door" or c.kind == "window" then
         local m = S.moveableName and S.moveableName(c.obj)
         if m and m ~= "" then n = m end
         local open = false
         pcall(function() open = c.obj:IsOpen() end)
+        -- the same state words as the scanner's Doors and Windows lists (feminine in French, like door and window there)
+        local state
         if c.kind == "window" then
             local broken = false
             pcall(function() broken = c.obj:isSmashed() end)
-            if broken then n = n .. ", broken" elseif open then n = n .. ", open" else n = n .. ", closed" end
+            if broken then state = ZA.tr("Scan_Broken") elseif open then state = ZA.tr("Scan_Open") else state = ZA.tr("Scan_Closed") end
         else
-            n = n .. (open and ", open" or ", closed")
+            state = open and ZA.tr("Scan_Open") or ZA.tr("Scan_Closed")
         end
+        n = n .. ", " .. state
     end
-    return n .. ": " .. k.how
+    return n .. ": " .. ZA.tr(k.how)
 end
 
 -- ---------- the beacon ----------
@@ -174,7 +179,7 @@ function ES.tick()
         ES.best = chased(zs) and list[1] or nil
         -- say where the way out is when a chase starts, or when the old one is no good any more
         if ES.best and (not was or (was.obj ~= ES.best.obj and not ES.stillGood(was, list))) then
-            ZA.queue("Way out: " .. ES.words(ES.best) .. ", " .. S.where(ES.best.x, ES.best.y, ES.best.z))
+            ZA.queue(ZA.tr("Escape_WayOut", ES.words(ES.best), S.where(ES.best.x, ES.best.y, ES.best.z)))
         end
     end
     local b = ES.best
@@ -207,7 +212,7 @@ for _, c in ipairs(S.categories) do if c.key == "escape" then inserted = true en
 if not inserted then
     for i, c in ipairs(S.categories) do
         if c.key == "zombies" then
-            table.insert(S.categories, i + 1, { key = "escape", name = "Ways out", none = "no way out that isn't towards a zombie" })
+            table.insert(S.categories, i + 1, { key = "escape", name = ZA.tr("Escape_Category"), none = ZA.tr("Escape_None") })
             break
         end
     end
@@ -220,7 +225,7 @@ table.insert(S.postBuilders, function(lists)
     for i, c in ipairs(list) do
         local e = {
             cat = "escape", key = "escape|" .. c.kind .. "|" .. math.floor(c.x) .. "," .. math.floor(c.y),
-            baseName = kinds[c.kind].name, obj = c.obj, x = c.x, y = c.y, z = c.z,
+            baseName = kindName(c.kind), obj = c.obj, x = c.x, y = c.y, z = c.z,
             walk = kinds[c.kind].walk, order = i, name = ES.words(c),
             alive = function(e) return e.obj ~= nil end,
         }
@@ -232,18 +237,17 @@ end)
 table.insert(S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
-        cat = "you", key = "you|escape", noWhere = true, order = 904, baseName = "Escape help",
+        cat = "you", key = "you|escape", noWhere = true, order = 904, baseName = ZA.tr("Escape_HelpName"),
         name = function()
             local on = ES.isOn()
-            return "Escape help: " .. (on and "on" or "off") .. ". While a zombie chases you, two rising whistles play "
-                .. "from the best way out. {Square} turns it " .. (on and "off" or "on")
+            return ZA.tr(on and "Escape_HelpOn" or "Escape_HelpOff")
         end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()
             local s = settings()
             s.escapeOff = not (s.escapeOff == true)
             ES.best = nil
-            ZA.say("Escape help " .. (s.escapeOff and "off" or "on") .. ".")
+            ZA.say(ZA.tr(s.escapeOff and "Escape_SwitchedOff" or "Escape_SwitchedOn"))
         end,
     })
 end)

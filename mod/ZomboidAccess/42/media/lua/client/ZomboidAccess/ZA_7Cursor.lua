@@ -14,15 +14,15 @@ local CU = ZA.CU
 
 local function floorWord(sq)
     local ok, kind = pcall(function() return ISShovelGroundCursor.GetDirtGravelSand(sq) end)
-    if ok and kind == "dirt" then return "soil" end
-    if ok and kind == "gravel" then return "gravel" end
-    if ok and kind == "sand" then return "sand" end
+    if ok and kind == "dirt" then return ZA.tr("Cursor_Soil") end
+    if ok and kind == "gravel" then return ZA.tr("Cursor_Gravel") end
+    if ok and kind == "sand" then return ZA.tr("Cursor_Sand") end
     local f = sq:getFloor()
     local n = f and f:getSprite() and f:getSprite():getName() or ""
-    if n:find("natural") then return "grass" end
-    if n:find("street") or n:find("road") then return "road" end
-    if n:find("interior") or sq:getRoom() then return "floor indoors" end
-    if n:find("exterior") then return "paving" end
+    if n:find("natural") then return ZA.tr("Cursor_Grass") end
+    if n:find("street") or n:find("road") then return ZA.tr("Cursor_Road") end
+    if n:find("interior") or sq:getRoom() then return ZA.tr("Cursor_FloorIndoors") end
+    if n:find("exterior") then return ZA.tr("Cursor_Paving") end
     return nil
 end
 
@@ -33,7 +33,7 @@ function CU.plantWords(plant, character)
     local parts = { name }
     local lvl = CFarmingSystem.instance:getXp(character or getPlayer())
     local ok, w = pcall(ISFarmingInfo.getWaterLvl, plant, lvl)
-    if ok and w then table.insert(parts, "water: " .. ZA.clean(w):lower()) end
+    if ok and w then table.insert(parts, ZA.tr("Cursor_Water", ZA.clean(w):lower())) end
     -- diseases show to a farmer of level 3 or more, as in the game's info window
     if lvl >= 3 and ISFarmingInfo.hasDisease(plant) then
         local d = {}
@@ -42,7 +42,7 @@ function CU.plantWords(plant, character)
             local v = plant[k[1]] or 0
             if v > 0 then table.insert(d, getText(k[2]) .. " " .. ISFarmingInfo.getDiseaseString(v, lvl):lower()) end
         end
-        table.insert(parts, "sick: " .. table.concat(d, ", "))
+        table.insert(parts, ZA.tr("Cursor_Sick", table.concat(d, ", ")))
     end
     return table.concat(parts, ", ")
 end
@@ -52,13 +52,13 @@ local function obstacle(sq)
     local objs = sq:getObjects()
     for i = 0, objs:size() - 1 do
         local o = objs:get(i)
-        if instanceof(o, "IsoTree") then return "a tree" end
+        if instanceof(o, "IsoTree") then return ZA.tr("Cursor_Tree") end
         if o ~= sq:getFloor() and not instanceof(o, "IsoWorldInventoryObject") then
             local n = S.moveableName and S.moveableName(o)
             if n and n ~= "" then return n:lower() end
         end
     end
-    if sq:has(IsoFlagType.collideW) or sq:has(IsoFlagType.collideN) then return "a wall" end
+    if sq:has(IsoFlagType.collideW) or sq:has(IsoFlagType.collideN) then return ZA.tr("Cursor_Wall") end
     return nil
 end
 
@@ -80,12 +80,12 @@ end
 
 local function actionWord(drag)
     -- a building cursor (ISBuildIsoEntity) prompts "Carpentry" and the like: say build
-    if drag.craftRecipe then return "build" end
+    if drag.craftRecipe then return ZA.tr("Cursor_Build") end
     local ok, a = pcall(function() return drag:getAPrompt() end)
     a = ok and a and ZA.clean(a) or ""
     if a == getText("ContextMenu_Farming") then
         -- the farming cursor's note says the job: "Sow: Carrot Seeds", "Water: ..."
-        a = noteText(drag):match("([%a][%a ]-)%s*:") or ""
+        a = noteText(drag):match("([^:%.%s][^:%.]-)%s*:") or ""
     end
     if a ~= "" then drag.zaAction = a end
     return drag.zaAction or ""
@@ -96,27 +96,31 @@ local function squaresFrom(x, y, z)
     local p = getPlayer()
     local dx, dy = x + 0.5 - p:getX(), y + 0.5 - p:getY()
     local n = math.max(math.abs(math.floor(x) - math.floor(p:getX())), math.abs(math.floor(y) - math.floor(p:getY())))
-    local s = n .. (n == 1 and " square " or " squares ") .. S.direction(dx, dy)
+    local s = ZA.tr(n == 1 and "Cursor_SquareOne" or "Cursor_SquaresMany", n, S.direction(dx, dy))
     local dz = math.floor(z) - math.floor(p:getZ())
-    if dz > 0 then s = s .. ", " .. dz .. " floor up" elseif dz < 0 then s = s .. ", " .. (-dz) .. " floor down" end
+    -- the scanner's floor words, singular and plural
+    if dz == 1 then s = s .. ", " .. ZA.tr("Scan_FloorUpOne")
+    elseif dz > 1 then s = s .. ", " .. ZA.tr("Scan_FloorsUp", dz)
+    elseif dz == -1 then s = s .. ", " .. ZA.tr("Scan_FloorDownOne")
+    elseif dz < -1 then s = s .. ", " .. ZA.tr("Scan_FloorsDown", -dz) end
     return s
 end
 
 function CU.describe(drag)
     local x, y, z = drag.xJoypad, drag.yJoypad, drag.zJoypad or math.floor(getPlayer():getZ())
     local sq = drag.sq or getCell():getGridSquare(x, y, z)
-    if not sq then return "No square there" end
+    if not sq then return ZA.tr("Cursor_NoSquare") end
     local p = getPlayer()
     local parts = {}
     if math.floor(p:getX()) == x and math.floor(p:getY()) == y then
-        table.insert(parts, "Under you")
+        table.insert(parts, ZA.tr("Cursor_UnderYou"))
     else
         table.insert(parts, squaresFrom(x, y, z))
     end
     local v = valid(drag, sq)
     local a = actionWord(drag)
-    if v == true then table.insert(parts, a ~= "" and ("can " .. a:lower() .. " here") or "yes")
-    elseif v == false then table.insert(parts, a ~= "" and ("can't " .. a:lower() .. " here") or "can't do it here") end
+    if v == true then table.insert(parts, a ~= "" and ZA.tr("Cursor_CanHere", a:lower()) or ZA.tr("Cursor_Yes"))
+    elseif v == false then table.insert(parts, a ~= "" and ZA.tr("Cursor_CantHere", a:lower()) or ZA.tr("Cursor_CantDo")) end
     local plant = CFarmingSystem and CFarmingSystem.instance and CFarmingSystem.instance:getLuaObjectOnSquare(sq)
     local said = ""
     if plant then
@@ -144,11 +148,11 @@ local function prompts(drag)
         if ok and t and t ~= "" then table.insert(out, btn .. ": " .. ZA.clean(t)) end
     end
     local a = actionWord(drag)
-    table.insert(out, "{Cross}: " .. (a ~= "" and a:lower() or "do it here"))
+    table.insert(out, a ~= "" and ZA.tr("Cursor_CrossDo", a:lower()) or ZA.tr("Cursor_CrossHere"))
     add("{Triangle}", "getYPrompt")
     add("{L1}", "getLBPrompt")
     add("{R1}", "getRBPrompt")
-    table.insert(out, "{Circle}: cancel")
+    table.insert(out, ZA.tr("Cursor_Cancel"))
     return table.concat(out, ". ")
 end
 
@@ -162,13 +166,12 @@ function CU.tick()
             if ZA.P and ZA.P.layer then ZA.P.layer = false end
             local what = actionWord(drag)
             if drag.craftRecipe then
-                pcall(function() what = "build a " .. drag.craftRecipe:getTranslationName() end)
+                pcall(function() what = ZA.tr("Cursor_BuildA", drag.craftRecipe:getTranslationName()) end)
             else
                 what = what:lower()
             end
-            ZA.say("Choose a square" .. (what ~= "" and (" to " .. what) or "") ..
-                ". The D-pad moves it one square: Up goes up-right, Right goes down-right, Down goes down-left, Left goes up-left. "
-                .. prompts(drag))
+            local head = what ~= "" and ZA.tr("Cursor_ChooseTo", what) or ZA.tr("Cursor_Choose")
+            ZA.say(head .. ". " .. ZA.tr("Cursor_DpadHelp") .. " " .. prompts(drag))
         end
         return
     end

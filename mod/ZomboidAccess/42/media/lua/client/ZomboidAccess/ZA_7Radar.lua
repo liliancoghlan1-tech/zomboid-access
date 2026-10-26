@@ -75,15 +75,15 @@ end
 table.insert(S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
-        cat = "you", key = "you|radar", noWhere = true, order = 902, baseName = "Zombie sounds",
+        cat = "you", key = "you|radar", noWhere = true, order = 902, baseName = ZA.tr("Radar_Name"),
         name = function()
-            return "Zombie sounds: " .. (R.on and "on" or "off") .. ". {Square} turns them " .. (R.on and "off" or "on")
+            return ZA.tr(R.on and "Radar_HelpOn" or "Radar_HelpOff")
         end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
         action = function()
             R.on = not R.on
             R.next = {}
-            ZA.say("Zombie sounds " .. (R.on and "on" or "off") .. ".")
+            ZA.say(ZA.tr(R.on and "Radar_SwitchedOn" or "Radar_SwitchedOff"))
         end,
     })
 end)

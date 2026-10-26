@@ -207,11 +207,11 @@ local function finish(p)
     if ok and res == "here" then
         pcall(function() if e.obj then p:faceThisObject(e.obj) end end)
         if W.afterArrive then local f = W.afterArrive; W.afterArrive = nil; f(); return end
-        ZA.say("Arrived: " .. S.entryName(e) .. ".")
+        ZA.say(ZA.tr("WalkSafe_Arrived", S.entryName(e)))
         return
     end
     W.afterArrive = nil
-    ZA.say("Couldn't get right up to " .. S.entryName(e) .. ".")
+    ZA.say(ZA.tr("WalkSafe_CouldntGetUp", S.entryName(e)))
 end
 
 function WS.start(p, e, warn)
@@ -227,7 +227,7 @@ function WS.start(p, e, warn)
     local zl = getCell():getZombieList()
     for i = 0, zl:size() - 1 do W.known[zl:get(i)] = true end
     ZA.log("[ZA] safe walk to " .. e.key)
-    ZA.say((warn or "") .. "Walking round the zombies to " .. S.entryName(e) .. ". {Square} or End stops.")
+    ZA.say((warn or "") .. ZA.tr("WalkSafe_Walking", S.entryName(e)))
     return true
 end
 
@@ -238,7 +238,7 @@ function WS.legDone(p, failed, succeeded)
     pcall(function() moved = p:pressedMovement(false) or p:pressedCancelAction() end)
     if moved and not failed and not succeeded then
         W.safe, W.entry = nil, nil
-        ZA.say("Stopped.")
+        ZA.say(ZA.tr("WalkSafe_Stopped"))
         return
     end
     local x, y = S.entryPos(e)

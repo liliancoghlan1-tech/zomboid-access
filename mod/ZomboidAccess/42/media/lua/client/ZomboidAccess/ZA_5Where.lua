@@ -81,8 +81,18 @@ local function townWords(px, py)
         if not bd or d < bd then best, bd = t, d end
     end
     if not best then return nil end
-    if bd < 700 then return "In " .. best.name end
-    return "Outside town; the nearest is " .. best.name .. ", " .. S.where(best.x, best.y, 0)
+    if bd < 700 then
+        -- which part of the town (Marc, 2026-10-20: looking for where to settle, "Riverside" alone said too little):
+        -- by the compass from the town's middle (the middle of its spawn points, S.towns), as the guides and the
+        -- map talk about a town's quarters; the centre within 150 metres
+        if bd < 150 then return ZA.tr("Where_InCentre", best.name) end
+        local a = math.deg(math.atan2(-(py - best.y), px - best.x))   -- 0 = east, 90 = north (the map's y runs south)
+        local sector = math.floor(((a + 360 + 22.5) % 360) / 45)       -- 0 east, 1 north-east ... 7 south-east
+        local keys = { "Where_PartE", "Where_PartNE", "Where_PartN", "Where_PartNW", "Where_PartW", "Where_PartSW",
+            "Where_PartS", "Where_PartSE" }
+        return ZA.tr("Where_InPart", ZA.tr(keys[sector + 1]), best.name, math.floor(bd / 50 + 0.5) * 50)
+    end
+    return ZA.tr("Where_Outside", best.name, S.where(best.x, best.y, 0, true))
 end
 
 function WH.text()
@@ -93,35 +103,39 @@ function WH.text()
     if t then table.insert(parts, t) end
     local name, d, sx, sy = WH.nearestStreet(px, py)
     if name then
-        if d <= 7 then table.insert(parts, "on " .. name)
-        elseif d <= 30 then table.insert(parts, "near " .. name .. ", " .. S.where(sx, sy, pz))
-        else table.insert(parts, "the nearest street is " .. name .. ", " .. S.where(sx, sy, pz)) end
+        if d <= 7 then table.insert(parts, ZA.tr("Where_On", name))
+        elseif d <= 30 then table.insert(parts, ZA.tr("Where_Near", name, S.where(sx, sy, pz)))
+        else table.insert(parts, ZA.tr("Where_NearestStreet", name, S.where(sx, sy, pz))) end
     end
     local sq = p:getCurrentSquare()
     local room = sq and sq:getRoom()
     if room then
-        local where = "inside"
+        local where = ZA.tr("Where_Inside")
+        -- buildingKind and roomName return the bare name and the phrase that places you in it ("in the pharmacy",
+        -- "dans la pharmacie"): the phrase carries the right preposition and article for the language
         pcall(function()
             local b = getWorld():getMetaGrid():getBuildingAt(math.floor(px), math.floor(py))
-            local kind = b and S.buildingKind and S.buildingKind(b)
-            if b and b:isResidential() then kind = "a house" elseif kind then kind = "the " .. kind end
-            if kind then where = "in " .. kind end
+            local kind, kindIn
+            if b and S.buildingKind then kind, kindIn = S.buildingKind(b) end
+            if b and b:isResidential() then where = ZA.tr("Where_InHouse")
+            elseif kind then where = kindIn end
         end)
-        local rn = S.roomName and S.roomName(room)
-        if rn then where = where .. ", in the " .. rn end
+        local rn, rnIn
+        if S.roomName then rn, rnIn = S.roomName(room) end
+        if rn and rnIn then where = where .. ", " .. rnIn end
         table.insert(parts, where)
     else
-        table.insert(parts, "outdoors")
+        table.insert(parts, ZA.tr("Where_Outdoors"))
     end
-    if pz > 0 then table.insert(parts, pz == 1 and "upstairs" or ("floor " .. (pz + 1)))
-    elseif pz < 0 then table.insert(parts, "in the basement") end
+    if pz > 0 then table.insert(parts, pz == 1 and ZA.tr("Where_Upstairs") or ZA.tr("Where_Floor", pz + 1))
+    elseif pz < 0 then table.insert(parts, ZA.tr("Where_Basement")) end
     -- the nearest marker
     local mk, md
     for _, m in ipairs(ZA.MK and ZA.MK.all() or {}) do
         local dd = (m.x - px) ^ 2 + (m.y - py) ^ 2
         if not md or dd < md then mk, md = m, dd end
     end
-    if mk then table.insert(parts, mk.name .. " is " .. S.where(mk.x, mk.y, mk.z)) end
+    if mk then table.insert(parts, ZA.tr("Where_Marker", mk.name, S.where(mk.x, mk.y, mk.z))) end
     local s = table.concat(parts, ", ")
     return s:sub(1, 1):upper() .. s:sub(2) .. "."
 end
@@ -135,8 +149,8 @@ end
 table.insert(S.builders, function(lists)
     local p = getPlayer()
     table.insert(lists.you, {
-        cat = "you", key = "you|where", noWhere = true, order = -1, baseName = "Where",
-        name = function() local ok, t = pcall(WH.text); return ok and t or "Where: unknown" end,
+        cat = "you", key = "you|where", noWhere = true, order = -1, baseName = ZA.tr("Where_Name"),
+        name = function() local ok, t = pcall(WH.text); return ok and t or ZA.tr("Where_Unknown") end,
         x = p:getX(), y = p:getY(), z = p:getZ(),
     })
 end)
@@ -177,20 +191,20 @@ function WH.tick()
         WH.said[k] = true
         if WH.started then ZA.queue(text) end
     end
-    if hour >= dusk - 1 and hour < dusk then once("predusk", "It'll be dark in about an hour.") end
-    if hour >= dusk then once("dusk", "Night has fallen. Zombies are harder to see, and so are you.") end
-    if hour >= dawn and hour < dawn + 1 then once("dawn", "Dawn: it's getting light.") end
+    if hour >= dusk - 1 and hour < dusk then once("predusk", ZA.tr("Where_PreDusk")) end
+    if hour >= dusk then once("dusk", ZA.tr("Where_Dusk")) end
+    if hour >= dawn and hour < dawn + 1 then once("dawn", ZA.tr("Where_Dawn")) end
     -- sleeping and waking
     local asleep = false
     pcall(function() asleep = p:isAsleep() end)
     if WH.started and asleep ~= WH.asleep then
-        if asleep then ZA.say("Asleep.") else ZA.say("You woke up. It's " .. ZA.timeWords() .. ".") end
+        if asleep then ZA.say(ZA.tr("Where_Asleep")) else ZA.say(ZA.tr("Where_Woke", ZA.timeWords())) end
     end
     WH.asleep = asleep
     local power, water = WH.utilities()
     if WH.started then
-        if WH.power and not power then ZA.say("The power has gone off. Lights and fridges won't work any more.") end
-        if WH.water and not water then ZA.say("The water has been cut off. Taps won't run any more; collect rain or find bottles.") end
+        if WH.power and not power then ZA.say(ZA.tr("Where_PowerOff")) end
+        if WH.water and not water then ZA.say(ZA.tr("Where_WaterOff")) end
     end
     WH.power, WH.water = power, water
     WH.started = true   -- nothing is announced on the first check after loading

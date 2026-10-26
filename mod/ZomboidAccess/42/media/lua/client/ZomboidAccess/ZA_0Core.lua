@@ -62,10 +62,32 @@ function ZA.setSetting(name, value)
     end
 end
 
+-- ---------- translation ----------
+-- The mod's own words live in media/lua/shared/Translate/<language>/UI.json as "UI_ZA_<key>", so they follow the
+-- game's language (English when a language has no file). Arguments fill %1, %2... in order; each one is turned
+-- into text first, so a number never reads "5.0".
+function ZA.tr(key, a1, a2, a3, a4, a5, a6, a7, a8, a9)
+    local args = { a1, a2, a3, a4, a5, a6, a7, a8, a9 }
+    local n = 0
+    for i = 9, 1, -1 do if args[i] ~= nil then n = i break end end
+    if n == 0 then return getText("UI_ZA_" .. key) end
+    local out = {}
+    for i = 1, n do out[i] = tostring(args[i] == nil and "" or args[i]) end
+    return getText("UI_ZA_" .. key, unpack(out))
+end
+
+-- A number with decimals in the language's own way: ZA.dec(1.5, "%.1f") is "1.5" in English, "1,5" in French.
+function ZA.dec(x, fmt)
+    local s = string.format(fmt or "%.1f", x)
+    local sep = getText("UI_ZA_Core_DecimalSep")
+    if sep ~= "." and sep ~= "UI_ZA_Core_DecimalSep" then s = s:gsub("%.", sep) end
+    return s
+end
+
 -- A place in a list, ", 2 of 25", unless the player turned positions off.
 function ZA.pos(i, n)
     if ZA.settings.positions == false then return "" end
-    return ", " .. tostring(i) .. " of " .. tostring(n)
+    return ZA.tr("Core_Pos", i, n)
 end
 
 -- ---------- text ----------
@@ -73,10 +95,14 @@ end
 -- Button names. The mod's own words write a button as {Cross}, {R2}, {Share}... (the PlayStation names), and they
 -- are said the way the game's own Controller option "Button style" labels them: Xbox, PlayStation or Steam Deck.
 -- Only these marks change, never the game's own text ("Square Table", "Wooden Cross").
+-- PlayStation (style 2) has no entry for L1, R1, L2, R2, L3, R3: the mark itself is said. Its other names are
+-- words of the game language (Croix, Rond, Carre, Triangle, Share, Options in French).
 ZA.buttonNames = {
     [1] = { Cross = "A", Circle = "B", Square = "X", Triangle = "Y", L1 = "LB", R1 = "RB", L2 = "LT", R2 = "RT",
-        L3 = "the left stick click", R3 = "the right stick click", Share = "View", Options = "Menu" },
-    [3] = { Cross = "A", Circle = "B", Square = "X", Triangle = "Y", Share = "View", Options = "Menu" },
+        L3 = ZA.tr("Core_BtnL3"), R3 = ZA.tr("Core_BtnR3"), Share = ZA.tr("Core_BtnView"), Options = ZA.tr("Core_BtnMenu") },
+    [2] = { Cross = ZA.tr("Core_BtnCross"), Circle = ZA.tr("Core_BtnCircle"), Square = ZA.tr("Core_BtnSquare"),
+        Triangle = ZA.tr("Core_BtnTriangle"), Share = ZA.tr("Core_BtnShare"), Options = ZA.tr("Core_BtnOptions") },
+    [3] = { Cross = "A", Circle = "B", Square = "X", Triangle = "Y", Share = ZA.tr("Core_BtnView"), Options = ZA.tr("Core_BtnMenu") },
 }
 function ZA.buttonStyle()
     local ok, style = pcall(function() return getCore():getOptionControllerButtonStyle() end)
@@ -93,10 +119,11 @@ ZA.padWords = {
     A = "{Cross}", B = "{Circle}", X = "{Square}", Y = "{Triangle}",
     LBumper = "{L1}", RBumper = "{R1}", LB = "{L1}", RB = "{R1}",
     LTrigger = "{L2}", RTrigger = "{R2}", LT = "{L2}", RT = "{R2}",
-    LStick = "the left stick", RStick = "the right stick",
+    LStick = ZA.tr("Core_PadLStick"), RStick = ZA.tr("Core_PadRStick"),
     LStickButton = "{L3}", RStickButton = "{R3}",
-    DPadUp = "D-pad up", DPadDown = "D-pad down", DPadLeft = "D-pad left", DPadRight = "D-pad right",
-    DPad = "the D-pad", Back = "{Share}", Start = "{Options}", Select = "{Share}",
+    DPadUp = ZA.tr("Core_PadDUp"), DPadDown = ZA.tr("Core_PadDDown"), DPadLeft = ZA.tr("Core_PadDLeft"),
+    DPadRight = ZA.tr("Core_PadDRight"),
+    DPad = ZA.tr("Core_PadDPad"), Back = "{Share}", Start = "{Options}", Select = "{Share}",
 }
 
 function ZA.clean(text)
@@ -261,33 +288,35 @@ function ZA.colourName(r, g, b)
     local v, d = mx, mx - mn
     local s = mx > 0 and d / mx or 0
     if s < 0.12 then
-        if v > 0.9 then return "white" elseif v > 0.65 then return "light grey"
-        elseif v > 0.35 then return "grey" elseif v > 0.15 then return "dark grey" else return "black" end
+        if v > 0.9 then return ZA.tr("Core_ColWhite") elseif v > 0.65 then return ZA.tr("Core_ColLightGrey")
+        elseif v > 0.35 then return ZA.tr("Core_ColGrey") elseif v > 0.15 then return ZA.tr("Core_ColDarkGrey")
+        else return ZA.tr("Core_ColBlack") end
     end
     local h
     if mx == r then h = ZA.mod((g - b) / d, 6) elseif mx == g then h = (b - r) / d + 2 else h = (r - g) / d + 4 end
     h = h * 60
     local base
-    if (h >= 18 and h < 50) and v < 0.62 then base = "brown"
-    elseif h >= 30 and h < 58 and s < 0.65 and v >= 0.62 then base = "blonde"
-    elseif h < 15 or h >= 345 then base = "red"
-    elseif h < 40 then base = "orange"
-    elseif h < 68 then base = "yellow"
-    elseif h < 160 then base = "green"
-    elseif h < 200 then base = "teal"
-    elseif h < 250 then base = "blue"
-    elseif h < 290 then base = "purple"
-    else base = "pink" end
-    local shade = ""
-    if v < 0.3 then shade = "very dark "
-    elseif v < 0.5 then shade = "dark "
-    elseif v > 0.85 and s < 0.45 then shade = "light " end
-    return shade .. base
+    if (h >= 18 and h < 50) and v < 0.62 then base = ZA.tr("Core_ColBrown")
+    elseif h >= 30 and h < 58 and s < 0.65 and v >= 0.62 then base = ZA.tr("Core_ColBlonde")
+    elseif h < 15 or h >= 345 then base = ZA.tr("Core_ColRed")
+    elseif h < 40 then base = ZA.tr("Core_ColOrange")
+    elseif h < 68 then base = ZA.tr("Core_ColYellow")
+    elseif h < 160 then base = ZA.tr("Core_ColGreen")
+    elseif h < 200 then base = ZA.tr("Core_ColTeal")
+    elseif h < 250 then base = ZA.tr("Core_ColBlue")
+    elseif h < 290 then base = ZA.tr("Core_ColPurple")
+    else base = ZA.tr("Core_ColPink") end
+    -- the shade is a whole phrase with the colour inside, since the word order differs between languages
+    if v < 0.3 then return ZA.tr("Core_ShadeVeryDark", base)
+    elseif v < 0.5 then return ZA.tr("Core_ShadeDark", base)
+    elseif v > 0.85 and s < 0.45 then return ZA.tr("Core_ShadeLight", base) end
+    return base
 end
 
 -- Skin: from lightest to darkest by how bright it is.
 function ZA.skinName(r, g, b)
     local v = 0.3 * r + 0.59 * g + 0.11 * b
-    if v > 0.82 then return "very light" elseif v > 0.68 then return "light"
-    elseif v > 0.5 then return "medium" elseif v > 0.33 then return "dark" else return "very dark" end
+    if v > 0.82 then return ZA.tr("Core_SkinVeryLight") elseif v > 0.68 then return ZA.tr("Core_SkinLight")
+    elseif v > 0.5 then return ZA.tr("Core_SkinMedium") elseif v > 0.33 then return ZA.tr("Core_SkinDark")
+    else return ZA.tr("Core_SkinVeryDark") end
 end

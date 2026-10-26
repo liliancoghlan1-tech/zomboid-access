@@ -14,7 +14,7 @@ local function saveWords(it)
     local folder = tostring(it.text or "")
     local y, mo, da, h, mi = folder:match("(%d%d%d%d)%-(%d%d)%-(%d%d)_(%d%d)%-(%d%d)")
     local name = d.saveName or folder
-    if y then name = "started " .. da .. "/" .. mo .. "/" .. y .. " at " .. h .. ":" .. mi end
+    if y then name = ZA.tr("ZScreens_Started", da, mo, y, h, mi) end
     table.insert(parts, mode ~= "" and (mode .. ", " .. name) or name)
     pcall(function()
         local pl = d.players
@@ -23,8 +23,8 @@ local function saveWords(it)
             if n then table.insert(parts, n) end
         end
     end)
-    if d.playerAlive == false then table.insert(parts, "your character is dead")
-    elseif d.playerAlive == true then table.insert(parts, "your character is alive") end
+    if d.playerAlive == false then table.insert(parts, ZA.tr("ZScreens_Dead"))
+    elseif d.playerAlive == true then table.insert(parts, ZA.tr("ZScreens_Alive")) end
     if d.lastPlayed then table.insert(parts, (ZA.clean(tostring(d.lastPlayed)):gsub(":%s*", " ", 1))) end
     return table.concat(parts, ", ")
 end
@@ -33,7 +33,7 @@ local origList = F.readers.ISScrollingListBox
 F.readers.ISScrollingListBox = function(p)
     if p.parent and p.parent.Type == "LoadGameScreen" then
         local it = p.items and p.items[p.selected]
-        if not it then return p, "No saved games", "" end
+        if not it then return p, ZA.tr("ZScreens_NoSaves"), "" end
         return it, saveWords(it) .. ZA.pos(p.selected, #p.items), ""
     end
     return origList(p)
@@ -42,7 +42,7 @@ end
 local origName = F.screenName
 function F.screenName(panel)
     if panel and panel.parent and panel.parent.Type == "LoadGameScreen" then
-        return "Load a game: Up and Down choose a save"
+        return ZA.tr("ZScreens_LoadScreen")
     end
     -- an Options tab: its name, its place, and how to change tab
     if panel and MainOptions and MainOptions.instance and panel.parent == MainOptions.instance.tabs then
@@ -50,7 +50,7 @@ function F.screenName(panel)
         local i = tabs:getActiveViewIndex()
         local v = tabs.viewList and tabs.viewList[i]
         if v then
-            return "Options, " .. ZA.clean(v.name) .. " tab" .. ZA.pos(i, #tabs.viewList) .. ". {L1} and {R1} change tab"
+            return ZA.tr("ZScreens_OptionsTab", ZA.clean(v.name), ZA.pos(i, #tabs.viewList))
         end
     end
     return origName(panel)
@@ -58,22 +58,21 @@ end
 
 -- ---------- mods ----------
 
-F.screens.ModSelector = { name = "Mods", hint = "Hold {R1} and press Up to reach the list of mods; {Cross} turns the selected one on or off. Hold {R1} and press Down to come back to these buttons" }
+F.screens.ModSelector = { name = ZA.tr("ZScreens_Mods"), hint = ZA.tr("ZScreens_ModsHint") }
 F.readers.ModListBox = function(p)
     local it = p.items and p.items[p.selected]
-    if not it then return p, "No mods", "" end
+    if not it then return p, ZA.tr("ZScreens_NoMods"), "" end
     local d = it.item or {}
     local name = it.text or "?"
     pcall(function() name = d.modInfo:getName() end)
-    local on = d.isActive and "on" or "off"
-    return it, ZA.clean(name) .. ", " .. on .. ZA.pos(p.selected, #p.items), on
+    local on = d.isActive and ZA.tr("ZScreens_On") or ZA.tr("ZScreens_Off")
+    return it, ZA.tr("ZScreens_ModLine", ZA.clean(name), on) .. ZA.pos(p.selected, #p.items), on
 end
-F.screens.ModListBox = { name = "List of mods", hint = "Up and Down choose, {Cross} turns a mod on or off" }
+F.screens.ModListBox = { name = ZA.tr("ZScreens_ModList"), hint = ZA.tr("ZScreens_ModListHint") }
 
 -- ---------- the world map ----------
 
-F.screens.ISWorldMap = { name = "World map. It's a picture: the scanner's Places and Where am I say the same things in words",
-    hint = "{Circle} closes it" }
+F.screens.ISWorldMap = { name = ZA.tr("ZScreens_WorldMap"), hint = ZA.tr("ZScreens_WorldMapHint") }
 
 -- ---------- dialogs ----------
 -- Yes/No boxes and message boxes say what they're asking before their buttons
@@ -106,28 +105,30 @@ end
 -- Each key by name; after each key, what's typed so far.
 
 local keyWords = {
-    ["`"] = "backtick", ["-"] = "minus", ["="] = "equals", ["["] = "left bracket", ["]"] = "right bracket",
-    ["\\"] = "backslash", [";"] = "semicolon", ["'"] = "apostrophe", [","] = "comma", ["."] = "full stop",
-    ["/"] = "slash", [" "] = "space",
+    ["`"] = ZA.tr("ZScreens_KeyBacktick"), ["-"] = ZA.tr("ZScreens_KeyMinus"), ["="] = ZA.tr("ZScreens_KeyEquals"),
+    ["["] = ZA.tr("ZScreens_KeyLBracket"), ["]"] = ZA.tr("ZScreens_KeyRBracket"),
+    ["\\"] = ZA.tr("ZScreens_KeyBackslash"), [";"] = ZA.tr("ZScreens_KeySemicolon"),
+    ["'"] = ZA.tr("ZScreens_KeyApostrophe"), [","] = ZA.tr("ZScreens_KeyComma"), ["."] = ZA.tr("ZScreens_KeyFullStop"),
+    ["/"] = ZA.tr("ZScreens_KeySlash"), [" "] = ZA.tr("ZScreens_KeySpace"),
 }
 
 local function oskText(osk)
     local t = osk and osk.entry and osk.entry:getText() or ""
-    if osk and osk.entry and osk.entry:isMasked() then return #t .. " characters" end
-    return t == "" and "nothing" or t
+    if osk and osk.entry and osk.entry:isMasked() then
+        return ZA.tr(#t == 1 and "ZScreens_CharsOne" or "ZScreens_CharsMany", #t)
+    end
+    return t == "" and ZA.tr("ZScreens_Nothing") or t
 end
 
 F.screens.OnScreenKeyboardPanel = {
-    name = "On-screen keyboard",
+    name = ZA.tr("ZScreens_OskName"),
     intro = function(p)
-        return "On-screen keyboard. Typed so far: " .. oskText(p.parent) .. ". The D-pad moves over the keys: numbers on the top row, "
-            .. "then the letters as on a computer keyboard. {Cross} types a key, {Square} deletes, {Triangle} types a space, "
-            .. "{Circle} cancels. Accept, at the right end of the third row, finishes"
+        return ZA.tr("ZScreens_OskIntro", oskText(p.parent))
     end,
 }
 F.screens.OnScreenKeyboardEntry = {
-    name = "On-screen keyboard, the text",
-    intro = function(p) return "The text: " .. oskText(p.parent) .. ". Left and Right move the cursor, Down goes to the keys" end,
+    name = ZA.tr("ZScreens_OskEntryName"),
+    intro = function(p) return ZA.tr("ZScreens_OskEntryIntro", oskText(p.parent)) end,
 }
 
 F.readers.OnScreenKeyboardPanel = function(p)
@@ -138,9 +139,9 @@ F.readers.OnScreenKeyboardPanel = function(p)
     if b.chLower then
         local upper = osk and (osk.capsLock or osk.shiftDown)
         local ch = upper and b.chUpper or b.chLower
-        word = keyWords[ch] or (ch:match("%a") and (upper and ("capital " .. ch) or ch)) or ch
+        word = keyWords[ch] or (ch:match("%a") and (upper and ZA.tr("ZScreens_Capital", ch) or ch)) or ch
     else
         word = ZA.clean(b.title or "")
     end
-    return b, word, "Typed: " .. oskText(osk)
+    return b, word, ZA.tr("ZScreens_Typed", oskText(osk))
 end
